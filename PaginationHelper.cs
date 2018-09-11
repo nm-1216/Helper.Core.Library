@@ -42,30 +42,34 @@ namespace Helper.Core.Library
             }
 
             #region 分页显示字符串拼装
-            if (paginationData.IsFull && paginationData.PageIndex > 1)
+            // 大于 1 页才显示分页信息
+            if (paginationData.PageCount > 1)
             {
-                stringBuilder.Append(string.Format(LI_FORMAT, paginationData.ItemClassName, paginationData.PageUrl.Replace(paginationData.PageFormat, "1"), paginationData.PageFirstText, paginationData.ItemStyle));
-            }
-            if (paginationData.IsFull && paginationData.PageIndex - 1 >= 1)
-            {
-                stringBuilder.Append(string.Format(LI_FORMAT, paginationData.ItemClassName, paginationData.PageUrl.Replace(paginationData.PageFormat, (paginationData.PageIndex - 1).ToString()), paginationData.PagePrevText, paginationData.ItemStyle));
-            }
-            for (int currentIndex = beginIndex; currentIndex <= endIndex; currentIndex++)
-            {
-                string itemClassName = paginationData.ItemClassName + " ";
-                if(currentIndex == paginationData.PageIndex)
+                if (paginationData.IsFull && paginationData.PageIndex > 1)
                 {
-                    itemClassName = itemClassName + paginationData.ActiveItemClassName;
+                    stringBuilder.Append(string.Format(LI_FORMAT, paginationData.ItemClassName, paginationData.PageUrl.Replace(paginationData.PageFormat, "1"), paginationData.PageFirstText, paginationData.ItemStyle));
                 }
-                stringBuilder.Append(string.Format(LI_FORMAT, itemClassName, paginationData.PageUrl.Replace(paginationData.PageFormat, currentIndex.ToString()), string.Format(paginationData.PageText, currentIndex), paginationData.ItemStyle));
-            }
-            if (paginationData.IsFull && paginationData.PageIndex + 1 <= paginationData.PageCount)
-            {
-                stringBuilder.Append(string.Format(LI_FORMAT, paginationData.ItemClassName, paginationData.PageUrl.Replace(paginationData.PageFormat, (paginationData.PageIndex + 1).ToString()), paginationData.PageNextText, paginationData.ItemStyle));
-            }
-            if (paginationData.IsFull && paginationData.PageIndex < paginationData.PageCount)
-            {
-                stringBuilder.Append(string.Format(LI_FORMAT, paginationData.ItemClassName, paginationData.PageUrl.Replace(paginationData.PageFormat, paginationData.PageCount.ToString()), paginationData.PageLastText, paginationData.ItemStyle));
+                if (paginationData.IsFull && paginationData.PageIndex - 1 >= 1)
+                {
+                    stringBuilder.Append(string.Format(LI_FORMAT, paginationData.ItemClassName, paginationData.PageUrl.Replace(paginationData.PageFormat, (paginationData.PageIndex - 1).ToString()), paginationData.PagePrevText, paginationData.ItemStyle));
+                }
+                for (int currentIndex = beginIndex; currentIndex <= endIndex; currentIndex++)
+                {
+                    string itemClassName = paginationData.ItemClassName + " ";
+                    if (currentIndex == paginationData.PageIndex)
+                    {
+                        itemClassName = itemClassName + paginationData.ActiveItemClassName;
+                    }
+                    stringBuilder.Append(string.Format(LI_FORMAT, itemClassName, paginationData.PageUrl.Replace(paginationData.PageFormat, currentIndex.ToString()), string.Format(paginationData.PageText, currentIndex), paginationData.ItemStyle));
+                }
+                if (paginationData.IsFull && paginationData.PageIndex + 1 <= paginationData.PageCount)
+                {
+                    stringBuilder.Append(string.Format(LI_FORMAT, paginationData.ItemClassName, paginationData.PageUrl.Replace(paginationData.PageFormat, (paginationData.PageIndex + 1).ToString()), paginationData.PageNextText, paginationData.ItemStyle));
+                }
+                if (paginationData.IsFull && paginationData.PageIndex < paginationData.PageCount)
+                {
+                    stringBuilder.Append(string.Format(LI_FORMAT, paginationData.ItemClassName, paginationData.PageUrl.Replace(paginationData.PageFormat, paginationData.PageCount.ToString()), paginationData.PageLastText, paginationData.ItemStyle));
+                }
             }
             #endregion
 
