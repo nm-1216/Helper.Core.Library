@@ -1,5 +1,6 @@
 ﻿using Helper.Core.Library.QueryHelper;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -100,32 +101,42 @@ namespace Helper.Core.Library.Translator
                 dynamic expressionData = expression.Object;
                 if (expressionData != null && expressionData.Expression != null && expressionData.Member != null && expressionArguments.Count > 0)
                 {
-                    TranslatorMapperItem mapperItem = this.typeDict[expressionData.Expression.Name];
-                    string fieldName = TQueryReflectionHelper.GetFieldName(mapperItem.TableType, expressionData.Member.Name);
-                    this.stringBuilder.Append(string.Format(TQueryHelperTemplateEnum.TABLE_FIELD, mapperItem.TableName, fieldName));
+                    if (expressionData.NodeType != ExpressionType.MemberAccess)
+                    {
+                        TranslatorMapperItem mapperItem = this.typeDict[expressionData.Expression.Name];
+                        string fieldName = TQueryReflectionHelper.GetFieldName(mapperItem.TableType, expressionData.Member.Name);
+                        this.stringBuilder.Append(string.Format(TQueryHelperTemplateEnum.TABLE_FIELD, mapperItem.TableName, fieldName));
 
-                    string expressionParam = null;
-                    if(expressionArguments[0].NodeType == ExpressionType.MemberAccess)
-                    {
-                        expressionParam = Expression.Lambda<Func<string>>(Expression.Convert(expressionArguments[0], typeof(string))).Compile().Invoke();
+                        string expressionParam = null;
+                        if (expressionArguments[0].NodeType == ExpressionType.MemberAccess)
+                        {
+                            expressionParam = Expression.Lambda<Func<string>>(Expression.Convert(expressionArguments[0], typeof(string))).Compile().Invoke();
+                        }
+                        else
+                        {
+                            expressionParam = expressionArguments[0].Value.ToString().Trim();
+                        }
+                        if (expressionParam.IndexOf("@") >= 0)
+                        {
+                            this.stringBuilder.Append(" = ");
+                            this.stringBuilder.Append(expressionParam);
+                            this.stringBuilder.Append(" ");
+                        }
+                        else
+                        {
+                            this.stringBuilder.Append(" like '");
+                            if (expression.Method.Name != "StartsWith") this.stringBuilder.Append("%");
+                            this.stringBuilder.Append(expressionParam);
+                            if (expression.Method.Name != "EndsWith") this.stringBuilder.Append("%");
+                            this.stringBuilder.Append("' ");
+                        }
                     }
                     else
                     {
-                        expressionParam = expressionArguments[0].Value.ToString().Trim();
-                    }
-                    if (expressionParam.IndexOf("@") >= 0)
-                    {
-                        this.stringBuilder.Append(" = ");
-                        this.stringBuilder.Append(expressionParam);
-                        this.stringBuilder.Append(" ");
-                    }
-                    else
-                    {
-                        this.stringBuilder.Append(" like '");
-                        if (expression.Method.Name != "StartsWith") this.stringBuilder.Append("%");
-                        this.stringBuilder.Append(expressionParam);
-                        if (expression.Method.Name != "EndsWith") this.stringBuilder.Append("%");
-                        this.stringBuilder.Append("' ");
+                        if(expression.Method.Name == "Contains")
+                        {
+                            this.stringBuilder.Append(this.VisitMethodCallExpression(expression));
+                        }
                     }
                 }
             }
@@ -177,6 +188,42 @@ namespace Helper.Core.Library.Translator
                 }
             }
             return expression;
+        }
+        private string VisitMethodCallExpression(MethodCallExpression func)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+
+            if (func.Method.Name.Contains("Contains"))
+            {
+                //获得调用者的内容元素
+                var originalFunc = Expression.Lambda<Func<object>>(func.Object).Compile();
+                var dataList = originalFunc() as IEnumerable;
+                //获得字段
+                dynamic funcType = func.Arguments[0];
+
+                TranslatorMapperItem mapperItem = this.typeDict[funcType.Expression.Name];
+                string fieldName = TQueryReflectionHelper.GetFieldName(mapperItem.TableType, funcType.Member.Name);
+
+                stringBuilder.Append(" ");
+                stringBuilder.Append(fieldName);
+                stringBuilder.Append(" in (");
+
+                StringBuilder dataStringBuilder = new StringBuilder();
+                foreach (var data in dataList)
+                {
+                    dataStringBuilder.Append(string.Format("'{0}',", data.ToString()));
+                }
+
+                string inCondition = dataStringBuilder.ToString().TrimEnd(new char[] { ',' });
+                if(funcType.Type == typeof(int))
+                {
+                    inCondition = inCondition.Replace("'", "");
+                }
+                stringBuilder.Append(inCondition);
+
+                stringBuilder.Append(") ");
+            }
+            return stringBuilder.ToString();
         }
     }
 }

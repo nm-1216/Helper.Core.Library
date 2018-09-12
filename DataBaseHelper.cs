@@ -6,9 +6,12 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Text;
+using System.Linq;
 using System.Reflection;
 using System.Data.Common;
-using MySql.Data.MySqlClient;
+using System.Linq.Expressions;
+using Helper.Core.Library.Translator;
+using System.Text.RegularExpressions;
 
 namespace Helper.Core.Library
 {
@@ -81,6 +84,14 @@ namespace Helper.Core.Library
     {
         #region 私有属性常量
 
+        private const string INSERT_FIELD_SQL = ",{0}{1}";
+        private const string INSERT_FIELD_PARAMETER_SQL = ",@{0}{1}";
+        private const string INSERT_SQL = "insert into {0}({1})values({2})";
+
+        private const string UPDATE_FIELD_PARAMETER_SQL = ",{0}=@{1}{2}";
+        private const string UPDATE_SQL = "update {0} set {1} where {2}";
+
+        private const string DELETE_SQL = "delete from {0} where {1}";
         private static readonly object lockItem = new object(); 
         private static readonly Dictionary<string, Dictionary<PropertyInfo, string>> PropertyAttributeDict = new Dictionary<string, Dictionary<PropertyInfo, string>>();
 
@@ -111,6 +122,208 @@ namespace Helper.Core.Library
         {
             ConnectionString = connectionString;
             DataBaseType = dataBaseType;
+        }
+        #endregion
+
+        #region Insert
+        /// <summary>
+        /// 插入数据
+        /// </summary>
+        /// <param name="tableName">表名</param>
+        /// <param name="data">数据</param>
+        /// <param name="ignorePropertyList">忽略属性列表</param>
+        /// <returns></returns>
+        public static bool Insert(string tableName, object data, string[] ignorePropertyList = null)
+        {
+            return Insert(null, null, tableName, data, ignorePropertyList);
+        }
+        /// <summary>
+        /// 插入数据
+        /// </summary>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="tableName">表名</param>
+        /// <param name="data">数据</param>
+        /// <param name="ignorePropertyList">忽略属性列表</param>
+        /// <returns></returns>
+        public static bool Insert(string connectionString, string dataBaseType, string tableName, object data, string[] ignorePropertyList = null)
+        {
+            Dictionary<string, object> mapperDict = InitEntityToPropertyMapper(data, ignorePropertyList);
+
+            string fieldDataList = INSERT_FIELD_SQL;
+            string fieldParameterList = INSERT_FIELD_PARAMETER_SQL;
+            foreach (KeyValuePair<string, object> keyValueItem in mapperDict)
+            {
+                fieldDataList = string.Format(fieldDataList, keyValueItem.Key, INSERT_FIELD_SQL);
+                fieldParameterList = string.Format(fieldParameterList, keyValueItem.Key, INSERT_FIELD_PARAMETER_SQL);
+            }
+            fieldDataList = StringHelper.TrimChar(string.Format(fieldDataList, "", ""), ",");
+            fieldParameterList = StringHelper.TrimChar(StringHelper.TrimChar(string.Format(fieldParameterList, "", ""), "@"), ",");
+
+            string commandText = string.Format(INSERT_SQL, tableName, fieldDataList, fieldParameterList);
+            return ExecuteNonQuery(connectionString, dataBaseType, commandText, mapperDict, CommandType.Text) > 0;
+        }
+        /// <summary>
+        /// 插入数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="data">数据</param>
+        /// <param name="ignoreLambda">忽略属性表达式</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static bool Insert<T>(object data, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
+        {
+            return Insert<T>(data, CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray(), tableName);
+        }
+        /// <summary>
+        /// 插入数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="data">数据</param>
+        /// <param name="ignorePropertyList">忽略属性列表</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static bool Insert<T>(object data, string[] ignorePropertyList = null, string tableName = null) where T : class
+        {
+            return Insert<T>(null, null, data, ignorePropertyList, tableName);
+        }
+        /// <summary>
+        /// 插入数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="data">数据</param>
+        /// <param name="ignoreLambda">忽略属性表达式</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static bool Insert<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
+        {
+            return Insert<T>(connectionString, dataBaseType, data, CommonHelper.GetExpressionList(ignoreLambda).ToArray(), tableName);
+        }
+        /// <summary>
+        /// 插入数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="data">数据</param>
+        /// <param name="ignorePropertyList">忽略属性列表</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static bool Insert<T>(string connectionString, string dataBaseType, object data, string[] ignorePropertyList = null, string tableName = null) where T : class
+        {
+            tableName = GetDataBaseTableName<T>(tableName);
+            return Insert(connectionString, dataBaseType, tableName, data, ignorePropertyList);
+        }
+        #endregion
+
+        #region Update
+        /// <summary>
+        /// 更新数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="data">数据</param>
+        /// <param name="lambda">Where 表达式，如果表达式左侧值等于右侧值，则视为参数</param>
+        /// <param name="ignoreLambda">忽略属性表达式</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static bool Update<T>(object data, Expression<Func<T, bool>> lambda, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
+        {
+            return Update<T>(data, lambda, CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray(), tableName);
+        }
+        /// <summary>
+        /// 更新数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="data">数据</param>
+        /// <param name="lambda">Where 表达式，如果表达式左侧值等于右侧值，则视为参数</param>
+        /// <param name="ignorePropertyList">忽略属性列表</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static bool Update<T>(object data, Expression<Func<T, bool>> lambda, string[] ignorePropertyList = null, string tableName = null) where T : class
+        {
+            return Update<T>(null, null, data, lambda, ignorePropertyList, tableName);
+        }
+        /// <summary>
+        /// 更新数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="data">数据</param>
+        /// <param name="lambda">Where 表达式，如果表达式左侧值等于右侧值，则视为参数</param>
+        /// <param name="ignoreLambda">忽略属性表达式</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static bool Update<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> lambda, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
+        {
+            return Update<T>(connectionString, dataBaseType, data, lambda, CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray(), tableName);
+        }
+        /// <summary>
+        /// 更新数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="data">数据</param>
+        /// <param name="lambda">Where 表达式，如果表达式左侧值等于右侧值，则视为参数</param>
+        /// <param name="ignorePropertyList">忽略属性列表</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static bool Update<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> lambda, string[] ignorePropertyList = null, string tableName = null) where T : class
+        {
+            Dictionary<string, object> mapperDict = InitEntityToPropertyMapper(data, ignorePropertyList);
+
+            tableName = GetDataBaseTableName<T>(tableName);
+
+            string whereSql = new WhereTranslator().Translate(lambda);
+            whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+
+            string fieldParameterList = UPDATE_FIELD_PARAMETER_SQL;
+            foreach (KeyValuePair<string, object> keyValueItem in mapperDict)
+            {
+                fieldParameterList = string.Format(fieldParameterList, keyValueItem.Key, keyValueItem.Key, UPDATE_FIELD_PARAMETER_SQL);
+            }
+            fieldParameterList = StringHelper.TrimChar(fieldParameterList.Substring(0, fieldParameterList.LastIndexOf(",")), ",");
+
+            string commandText = string.Format(UPDATE_SQL, tableName, fieldParameterList, whereSql);
+            return ExecuteNonQuery(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(mapperDict, data, whereSql), CommandType.Text) > 0;
+        }
+        #endregion
+
+        #region Delete
+        /// <summary>
+        /// 删除数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="data">实体类型数据</param>
+        /// <param name="lambda">Where 表达式</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static bool Delete<T>(object data, Expression<Func<T, bool>> lambda, string tableName = null) where T : class
+        {
+            return Delete<T>(null, null, data, lambda, tableName);
+        }
+        /// <summary>
+        /// 删除数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="data">实体类型数据</param>
+        /// <param name="lambda">Where 表达式</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static bool Delete<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> lambda, string tableName = null) where T : class
+        {
+            tableName = GetDataBaseTableName<T>(tableName);
+
+            string whereSql = new WhereTranslator().Translate(lambda);
+            whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+
+            string commandText = string.Format(DELETE_SQL, tableName, whereSql);
+            return ExecuteNonQuery(commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), CommandType.Text) > 0;
         }
         #endregion
 
@@ -577,7 +790,6 @@ namespace Helper.Core.Library
             DbConnection connection = null;
             switch (dataBaseType)
             {
-                case DataBaseTypeEnum.MySql: connection = new MySqlConnection(connectionString); break;
                 default: connection = new SqlConnection(connectionString); break;
             }
             if (connection.State != ConnectionState.Open) connection.Open();
@@ -853,6 +1065,56 @@ namespace Helper.Core.Library
                 }
                 return resultDict;
             }
+        }
+        private static Dictionary<string, object> InitEntityToPropertyMapper(object parameterList, params string[] ignorePropertyList)
+        {
+            List<string> filterPropertyList = ignorePropertyList != null ? ignorePropertyList.ToList<string>() : null;
+            Type type = parameterList.GetType();
+            Dictionary<string, object> resultDict = new Dictionary<string, object>();
+            ReflectionHelper.Foreach((PropertyInfo propertyInfo) =>
+            {
+                string fieldName = ReflectionExtendHelper.GetAttributeValue<DataBaseTAttribute>(type, propertyInfo, p => { return p.Name; });
+                if (string.IsNullOrEmpty(fieldName)) fieldName = propertyInfo.Name;
+
+                if (ignorePropertyList == null || !ignorePropertyList.Contains(fieldName))
+                {
+                    resultDict.Add(fieldName, ReflectionHelper.GetPropertyValue(parameterList, propertyInfo));
+                }
+            }, type);
+            return resultDict;
+        }
+        private static Dictionary<string, object> RevisePropertyMapperDict<T>(Dictionary<string, object> mapperDict, object data, string whereSql) where T : class
+        {
+            if (whereSql.IndexOf("@") > 0)
+            {
+                Regex regex = new Regex(@"@([a-z0-9]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                MatchCollection matchCollection = regex.Matches(whereSql);
+                if (matchCollection != null && matchCollection.Count > 0)
+                {
+                    foreach (Match match in matchCollection)
+                    {
+                        GroupCollection groupCollection = match.Groups;
+                        if (groupCollection != null && groupCollection.Count >= 2)
+                        {
+                            string propertyName = groupCollection[1].Value;
+                            if(!mapperDict.ContainsKey(propertyName))
+                            {
+                                mapperDict.Add(propertyName, ReflectionHelper.GetPropertyValue(data, propertyName));
+                            }
+                        }
+                    }
+                }
+            }
+            return mapperDict;
+        }
+        private static string GetDataBaseTableName<T>(string tableName)
+        {
+            if (string.IsNullOrEmpty(tableName))
+            {
+                tableName = ReflectionExtendHelper.GetAttributeValue<DataBaseTAttribute>(typeof(T), (p) => { return p.Name; });
+            }
+            if (string.IsNullOrEmpty(tableName)) tableName = typeof(T).Name;
+            return tableName;
         }
         #endregion
     }
