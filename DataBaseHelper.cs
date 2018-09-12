@@ -170,11 +170,11 @@ namespace Helper.Core.Library
         /// 插入数据
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="ignoreLambda">忽略</param>
         /// <param name="data">数据</param>
+        /// <param name="ignoreLambda">忽略</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Insert<T>(Expression<Func<T, object>> ignoreLambda, object data, string tableName = null) where T : class
+        public static bool Insert<T>(object data, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
         {
             return Insert<T>(data, CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray(), tableName);
         }
@@ -196,11 +196,11 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="connectionString">连接字符串</param>
         /// <param name="dataBaseType">数据库类型</param>
-        /// <param name="ignoreLambda">忽略</param>
         /// <param name="data">数据</param>
+        /// <param name="ignoreLambda">忽略</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Insert<T>(string connectionString, string dataBaseType, Expression<Func<T, object>> ignoreLambda, object data, string tableName = null) where T : class
+        public static bool Insert<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
         {
             return Insert<T>(connectionString, dataBaseType, data, CommonHelper.GetExpressionList(ignoreLambda).ToArray(), tableName);
         }
@@ -226,27 +226,27 @@ namespace Helper.Core.Library
         /// 更新数据
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="data">数据</param>
         /// <param name="whereLambda">条件</param>
         /// <param name="ignoreLambda">忽略</param>
-        /// <param name="data">数据</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Update<T>(Expression<Func<T, bool>> whereLambda, Expression<Func<T, object>> ignoreLambda, object data, string tableName = null) where T : class
+        public static bool Update<T>(object data, Expression<Func<T, bool>> whereLambda, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
         {
-            return Update<T>(whereLambda, data, CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray(), tableName);
+            return Update<T>(data, whereLambda, CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray(), tableName);
         }
         /// <summary>
         /// 更新数据
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="whereLambda">条件</param>
         /// <param name="data">数据</param>
+        /// <param name="whereLambda">条件</param>
         /// <param name="ignorePropertyList">忽略属性</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Update<T>(Expression<Func<T, bool>> whereLambda, object data, string[] ignorePropertyList = null, string tableName = null) where T : class
+        public static bool Update<T>(object data, Expression<Func<T, bool>> whereLambda, string[] ignorePropertyList = null, string tableName = null) where T : class
         {
-            return Update<T>(null, null, whereLambda, data, ignorePropertyList, tableName);
+            return Update<T>(null, null, data, whereLambda, ignorePropertyList, tableName);
         }
         /// <summary>
         /// 更新数据
@@ -254,14 +254,14 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="connectionString">连接字符串</param>
         /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="data">数据</param>
         /// <param name="whereLambda">条件</param>
         /// <param name="ignoreLambda">忽略</param>
-        /// <param name="data">数据</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Update<T>(string connectionString, string dataBaseType, Expression<Func<T, bool>> whereLambda, Expression<Func<T, object>> ignoreLambda, object data, string tableName = null) where T : class
+        public static bool Update<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
         {
-            return Update<T>(connectionString, dataBaseType, whereLambda, data, CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray(), tableName);
+            return Update<T>(connectionString, dataBaseType, data, whereLambda, CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray(), tableName);
         }
         /// <summary>
         /// 更新数据
@@ -269,12 +269,12 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="connectionString">连接字符串</param>
         /// <param name="dataBaseType">数据库类型</param>
-        /// <param name="whereLambda">条件</param>
         /// <param name="data">数据</param>
+        /// <param name="whereLambda">条件</param>
         /// <param name="ignorePropertyList">忽略属性</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Update<T>(string connectionString, string dataBaseType, Expression<Func<T, bool>> whereLambda, object data, string[] ignorePropertyList = null, string tableName = null) where T : class
+        public static bool Update<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda, string[] ignorePropertyList = null, string tableName = null) where T : class
         {
             Dictionary<string, object> mapperDict = InitEntityToPropertyMapper(data, ignorePropertyList);
 
@@ -304,9 +304,9 @@ namespace Helper.Core.Library
         /// <param name="whereLambda">条件</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Delete<T>(Expression<Func<T, bool>> whereLambda, object data, string tableName = null) where T : class
+        public static bool Delete<T>(object data, Expression<Func<T, bool>> whereLambda, string tableName = null) where T : class
         {
-            return Delete<T>(null, null, whereLambda, data, tableName);
+            return Delete<T>(null, null, data, whereLambda, tableName);
         }
         /// <summary>
         /// 删除数据
@@ -314,11 +314,11 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="connectionString">连接字符串</param>
         /// <param name="dataBaseType">数据库类型</param>
-        /// <param name="whereLambda">条件</param>
         /// <param name="data">实体类型数据</param>
+        /// <param name="whereLambda">条件</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Delete<T>(string connectionString, string dataBaseType, Expression<Func<T, bool>> whereLambda, object data, string tableName = null) where T : class
+        public static bool Delete<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda, string tableName = null) where T : class
         {
             tableName = GetDataBaseTableName<T>(tableName);
 
@@ -336,14 +336,14 @@ namespace Helper.Core.Library
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
         /// <typeparam name="K">简单类型</typeparam>
+        /// <param name="data">数据</param>
         /// <param name="fieldLambda">字段</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="data">数据</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static K First<T, K>(Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, object data, string tableName = null) where T : class
+        public static K First<T, K>(object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, string tableName = null) where T : class
         {
-            return First<T, K>(null, null, fieldLambda, whereLambda, data, tableName);
+            return First<T, K>(null, null, data, fieldLambda, whereLambda, tableName);
         }
         /// <summary>
         /// 返回单个字段
@@ -352,12 +352,12 @@ namespace Helper.Core.Library
         /// <typeparam name="K">简单类型</typeparam>
         /// <param name="connectionString">连接字符串</param>
         /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="data">数据</param>
         /// <param name="fieldLambda">字段</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="data">数据</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static K First<T, K>(string connectionString, string dataBaseType, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, object data, string tableName = null) where T : class
+        public static K First<T, K>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, string tableName = null) where T : class
         {
             tableName = GetDataBaseTableName<T>(tableName);
 
@@ -374,15 +374,15 @@ namespace Helper.Core.Library
         /// 是否存在
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="data">数据</param>
         /// <param name="fieldLambda">字段</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="data">数据</param>
         /// <param name="identityID">唯一标识，自增编号</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Exists<T>(Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, object data, int identityID, string tableName = null) where T : class
+        public static bool Exists<T>(object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, int identityID, string tableName = null) where T : class
         {
-            return Exists<T>(null, null, fieldLambda, whereLambda, data, identityID, tableName);
+            return Exists<T>(null, null, data, fieldLambda, whereLambda, identityID, tableName);
         }
         /// <summary>
         /// 是否存在
@@ -390,15 +390,15 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="connectionString">连接字符串</param>
         /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="data">数据</param>
         /// <param name="fieldLambda">字段</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="data">数据</param>
         /// <param name="identityID">唯一标识，自增编号</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Exists<T>(string connectionString, string dataBaseType, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, object data, int identityID, string tableName = null) where T : class
+        public static bool Exists<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, int identityID, string tableName = null) where T : class
         {
-            int result = First<T, int>(connectionString, dataBaseType, fieldLambda, whereLambda, data, tableName);
+            int result = First<T, int>(connectionString, dataBaseType, data, fieldLambda, whereLambda, tableName);
             if (identityID == 0) return result > 0;
             return result == 0 ? false : (result != identityID);
         }
