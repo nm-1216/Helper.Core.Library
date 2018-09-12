@@ -212,6 +212,13 @@ namespace Helper.Core.Library
             return dataList;
         }
 
+        internal static string GetExpression<T>(Expression<Func<T, object>> expression) where T : class
+        {
+            List<string> resultList = GetExpressionList<T>(expression);
+            if (resultList != null && resultList.Count > 0) return resultList[0];
+            return null;
+        }
+
         internal static Dictionary<string, object> GetParameterDict(object param)
         {
             Dictionary<string, object> parameterDict = null;
