@@ -12,6 +12,7 @@ using System.Data.Common;
 using System.Linq.Expressions;
 using Helper.Core.Library.Translator;
 using System.Text.RegularExpressions;
+using MySql.Data.MySqlClient;
 
 namespace Helper.Core.Library
 {
@@ -866,6 +867,7 @@ namespace Helper.Core.Library
             DbConnection connection = null;
             switch (dataBaseType)
             {
+                case DataBaseTypeEnum.MySql: connection = new MySqlConnection(connectionString); break;
                 default: connection = new SqlConnection(connectionString); break;
             }
             if (connection.State != ConnectionState.Open) connection.Open();
