@@ -93,9 +93,14 @@ namespace Helper.Core.Library
         private const string UPDATE_SQL = "update {0} set {1} where {2} ";
 
         private const string DELETE_SQL = "delete from {0} where {1} ";
-        private const string FIRST_SQL = "select {0} from {1} where {2} ";
+        private const string FIRST_SQL = "select {0} from {1} {2} where {3} ";
 
-        private static readonly object lockItem = new object(); 
+        private const string COUNT_SQL = "select count(0) from {1} {2}";
+        private const string COUNT_WHERE_SQL = "select count(0) from {1} {2} where {3}";
+
+        private const string SINGLE_SQL = "select {0} from {1} {2} where {3}";
+
+        private static readonly object lockItem = new object();
         private static readonly Dictionary<string, Dictionary<PropertyInfo, string>> PropertyAttributeDict = new Dictionary<string, Dictionary<PropertyInfo, string>>();
 
         #region 异常消息
@@ -151,20 +156,7 @@ namespace Helper.Core.Library
         /// <returns></returns>
         public static bool Insert(string connectionString, string dataBaseType, string tableName, object data, string[] ignorePropertyList = null)
         {
-            Dictionary<string, object> mapperDict = InitEntityToPropertyMapper(data, ignorePropertyList);
-
-            string fieldDataList = INSERT_FIELD_SQL;
-            string fieldParameterList = INSERT_FIELD_PARAMETER_SQL;
-            foreach (KeyValuePair<string, object> keyValueItem in mapperDict)
-            {
-                fieldDataList = string.Format(fieldDataList, keyValueItem.Key, INSERT_FIELD_SQL);
-                fieldParameterList = string.Format(fieldParameterList, keyValueItem.Key, INSERT_FIELD_PARAMETER_SQL);
-            }
-            fieldDataList = StringHelper.TrimChar(string.Format(fieldDataList, "", ""), ",");
-            fieldParameterList = StringHelper.TrimChar(StringHelper.TrimChar(string.Format(fieldParameterList, "", ""), "@"), ",");
-
-            string commandText = string.Format(INSERT_SQL, tableName, fieldDataList, fieldParameterList);
-            return ExecuteNonQuery(connectionString, dataBaseType, commandText, mapperDict, CommandType.Text) > 0;
+            return ExecuteInsert(connectionString, dataBaseType, tableName, data, ignorePropertyList, null, null);
         }
         /// <summary>
         /// 插入数据
@@ -176,19 +168,7 @@ namespace Helper.Core.Library
         /// <returns></returns>
         public static bool Insert<T>(object data, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
         {
-            return Insert<T>(data, CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray(), tableName);
-        }
-        /// <summary>
-        /// 插入数据
-        /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="data">数据</param>
-        /// <param name="ignorePropertyList">忽略属性</param>
-        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
-        /// <returns></returns>
-        public static bool Insert<T>(object data, string[] ignorePropertyList = null, string tableName = null) where T : class
-        {
-            return Insert<T>(null, null, data, ignorePropertyList, tableName);
+            return Insert<T>(null, null, data, ignoreLambda, tableName);
         }
         /// <summary>
         /// 插入数据
@@ -202,22 +182,23 @@ namespace Helper.Core.Library
         /// <returns></returns>
         public static bool Insert<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
         {
-            return Insert<T>(connectionString, dataBaseType, data, CommonHelper.GetExpressionList(ignoreLambda).ToArray(), tableName);
+            tableName = GetDataBaseTableName<T>(tableName);
+            return Insert(connectionString, dataBaseType, tableName, data, ignoreLambda != null ? CommonHelper.GetExpressionList(ignoreLambda).ToArray() : null);
         }
         /// <summary>
         /// 插入数据
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="connectionString">连接字符串</param>
-        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
         /// <param name="data">数据</param>
-        /// <param name="ignorePropertyList">忽略属性</param>
+        /// <param name="ignoreLambda">忽略</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Insert<T>(string connectionString, string dataBaseType, object data, string[] ignorePropertyList = null, string tableName = null) where T : class
+        public static bool TransactionInsert<T>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
         {
             tableName = GetDataBaseTableName<T>(tableName);
-            return Insert(connectionString, dataBaseType, tableName, data, ignorePropertyList);
+            return ExecuteInsert(null, null, tableName, data, ignoreLambda != null ? CommonHelper.GetExpressionList(ignoreLambda).ToArray() : null, con, transaction);
         }
         #endregion
 
@@ -233,20 +214,7 @@ namespace Helper.Core.Library
         /// <returns></returns>
         public static bool Update<T>(object data, Expression<Func<T, bool>> whereLambda, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
         {
-            return Update<T>(data, whereLambda, CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray(), tableName);
-        }
-        /// <summary>
-        /// 更新数据
-        /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="data">数据</param>
-        /// <param name="whereLambda">条件</param>
-        /// <param name="ignorePropertyList">忽略属性</param>
-        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
-        /// <returns></returns>
-        public static bool Update<T>(object data, Expression<Func<T, bool>> whereLambda, string[] ignorePropertyList = null, string tableName = null) where T : class
-        {
-            return Update<T>(null, null, data, whereLambda, ignorePropertyList, tableName);
+            return Update<T>(null, null, data, whereLambda, ignoreLambda, tableName);
         }
         /// <summary>
         /// 更新数据
@@ -261,37 +229,22 @@ namespace Helper.Core.Library
         /// <returns></returns>
         public static bool Update<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
         {
-            return Update<T>(connectionString, dataBaseType, data, whereLambda, CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray(), tableName);
+            return ExecuteUpdate<T>(connectionString, dataBaseType, data, whereLambda, ignoreLambda, tableName, null, null);
         }
         /// <summary>
         /// 更新数据
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="connectionString">连接字符串</param>
-        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
         /// <param name="data">数据</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="ignorePropertyList">忽略属性</param>
+        /// <param name="ignoreLambda">忽略</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Update<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda, string[] ignorePropertyList = null, string tableName = null) where T : class
+        public static bool TransactionUpdate<T>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, bool>> whereLambda, Expression<Func<T, object>> ignoreLambda, string tableName = null) where T : class
         {
-            Dictionary<string, object> mapperDict = InitEntityToPropertyMapper(data, ignorePropertyList);
-
-            tableName = GetDataBaseTableName<T>(tableName);
-
-            string whereSql = new WhereTranslator().Translate(whereLambda);
-            whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
-
-            string fieldParameterList = UPDATE_FIELD_PARAMETER_SQL;
-            foreach (KeyValuePair<string, object> keyValueItem in mapperDict)
-            {
-                fieldParameterList = string.Format(fieldParameterList, keyValueItem.Key, keyValueItem.Key, UPDATE_FIELD_PARAMETER_SQL);
-            }
-            fieldParameterList = StringHelper.TrimChar(fieldParameterList.Substring(0, fieldParameterList.LastIndexOf(",")), ",");
-
-            string commandText = string.Format(UPDATE_SQL, tableName, fieldParameterList, whereSql);
-            return ExecuteNonQuery(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(mapperDict, data, whereSql), CommandType.Text) > 0;
+            return ExecuteUpdate<T>(null, null, data, whereLambda, ignoreLambda, tableName, con, transaction);
         }
         #endregion
 
@@ -300,7 +253,7 @@ namespace Helper.Core.Library
         /// 删除数据
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="data">实体类型数据</param>
+        /// <param name="data">数据</param>
         /// <param name="whereLambda">条件</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
@@ -314,19 +267,27 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="connectionString">连接字符串</param>
         /// <param name="dataBaseType">数据库类型</param>
-        /// <param name="data">实体类型数据</param>
+        /// <param name="data">数据</param>
         /// <param name="whereLambda">条件</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
         public static bool Delete<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda, string tableName = null) where T : class
         {
-            tableName = GetDataBaseTableName<T>(tableName);
-
-            string whereSql = new WhereTranslator().Translate(whereLambda);
-            whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
-
-            string commandText = string.Format(DELETE_SQL, tableName, whereSql);
-            return ExecuteNonQuery(commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), CommandType.Text) > 0;
+            return ExecuteDelete<T>(connectionString, dataBaseType, data, whereLambda, tableName, null, null);
+        }
+        /// <summary>
+        /// 删除数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="data">数据</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static bool TransactionDelete<T>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, bool>> whereLambda, string tableName = null) where T : class
+        {
+            return ExecuteDelete<T>(null, null, data, whereLambda, tableName, con, transaction);
         }
         #endregion
 
@@ -339,11 +300,12 @@ namespace Helper.Core.Library
         /// <param name="data">数据</param>
         /// <param name="fieldLambda">字段</param>
         /// <param name="whereLambda">条件</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static K First<T, K>(object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, string tableName = null) where T : class
+        public static K First<T, K>(object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, bool withNoLock = true, string tableName = null) where T : class
         {
-            return First<T, K>(null, null, data, fieldLambda, whereLambda, tableName);
+            return First<T, K>(null, null, data, fieldLambda, whereLambda, withNoLock, tableName);
         }
         /// <summary>
         /// 返回单个字段
@@ -355,17 +317,29 @@ namespace Helper.Core.Library
         /// <param name="data">数据</param>
         /// <param name="fieldLambda">字段</param>
         /// <param name="whereLambda">条件</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static K First<T, K>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, string tableName = null) where T : class
+        public static K First<T, K>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, bool withNoLock = true, string tableName = null) where T : class
         {
-            tableName = GetDataBaseTableName<T>(tableName);
-
-            string whereSql = new WhereTranslator().Translate(whereLambda);
-            whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
-
-            string commandText = string.Format(FIRST_SQL, CommonHelper.GetExpression<T>(fieldLambda), tableName, whereSql);
-            return ExecuteScalar<K>(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), CommandType.Text);
+            return ExecuteFirst<T, K>(connectionString, dataBaseType, data, fieldLambda, whereLambda, withNoLock, tableName, null, null);
+        }
+        /// <summary>
+        /// 返回单个字段
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <typeparam name="K">简单类型</typeparam>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="data">数据</param>
+        /// <param name="fieldLambda">字段</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static K TransactionFirst<T, K>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, bool withNoLock = true, string tableName = null) where T : class
+        {
+            return ExecuteFirst<T, K>(null, null, data, fieldLambda, whereLambda, withNoLock, tableName, con, transaction);
         }
         #endregion
 
@@ -378,11 +352,12 @@ namespace Helper.Core.Library
         /// <param name="fieldLambda">字段</param>
         /// <param name="whereLambda">条件</param>
         /// <param name="identityID">唯一标识，自增编号</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Exists<T>(object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, int identityID, string tableName = null) where T : class
+        public static bool Exists<T>(object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, int identityID, bool withNoLock = true, string tableName = null) where T : class
         {
-            return Exists<T>(null, null, data, fieldLambda, whereLambda, identityID, tableName);
+            return Exists<T>(null, null, data, fieldLambda, whereLambda, identityID, withNoLock, tableName);
         }
         /// <summary>
         /// 是否存在
@@ -394,13 +369,115 @@ namespace Helper.Core.Library
         /// <param name="fieldLambda">字段</param>
         /// <param name="whereLambda">条件</param>
         /// <param name="identityID">唯一标识，自增编号</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <returns></returns>
-        public static bool Exists<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, int identityID, string tableName = null) where T : class
+        public static bool Exists<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, int identityID, bool withNoLock = true, string tableName = null) where T : class
         {
-            int result = First<T, int>(connectionString, dataBaseType, data, fieldLambda, whereLambda, tableName);
+            int result = First<T, int>(connectionString, dataBaseType, data, fieldLambda, whereLambda, withNoLock, tableName);
             if (identityID == 0) return result > 0;
             return result == 0 ? false : (result != identityID);
+        }
+        #endregion
+
+        #region Count 根据条件返回结果总数
+        /// <summary>
+        /// 查询总数
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="data">数据</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static int Count<T>(object data, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null) where T : class
+        {
+            return Count<T>(null, null, data, whereLambda, withNoLock, tableName);
+        }
+        /// <summary>
+        /// 查询总数
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="data">数据</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static int Count<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null) where T : class
+        {
+            return ExecuteCount<T>(connectionString, dataBaseType, data, whereLambda, withNoLock, tableName, null, null);
+        }
+        /// <summary>
+        /// 查询总数
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="data">数据</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <returns></returns>
+        public static int TransactionCount<T>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null) where T : class
+        {
+            return ExecuteCount<T>(null, null, data, whereLambda, withNoLock, tableName, con, transaction);
+        }
+        #endregion
+
+        #region Single 根据条件查询单条数据
+        /// <summary>
+        /// 返回单条查询语句
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="data">数据</param>
+        /// <param name="queryLambda">字段</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static T Single<T>(object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            return Single<T>(null, null, data, queryLambda, whereLambda, withNoLock, tableName, propertyMatchList, reflectionType);
+        }
+        /// <summary>
+        /// 返回单条查询语句
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="data">数据</param>
+        /// <param name="queryLambda">字段</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static T Single<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            return ExecuteSingle<T>(connectionString, dataBaseType, data, queryLambda, whereLambda, withNoLock, tableName, propertyMatchList, reflectionType, null, null);
+        }
+        /// <summary>
+        /// 返回单条查询语句
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="data">数据</param>
+        /// <param name="queryLambda">字段</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static T TransactionSingle<T>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            return ExecuteSingle<T>(null, null, data, queryLambda, whereLambda, withNoLock, tableName, propertyMatchList, reflectionType, con, transaction);
         }
         #endregion
 
@@ -434,6 +511,25 @@ namespace Helper.Core.Library
             {
                 result = command.ExecuteNonQuery();
             });
+            return result;
+        }
+        /// <summary>
+        /// ExecuteNonQuery
+        /// </summary>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="commandText">Sql 语句</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <returns></returns>
+        public static int TransactionNonQuery(DbConnection con, DbTransaction transaction, string commandText, object parameterList = null)
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+
+            int result = 0;
+            ExecuteCommand(null, null, commandText, parameterDict, null, CommandType.Text, (DbCommand command) =>
+            {
+                result = command.ExecuteNonQuery();
+            }, con, transaction);
             return result;
         }
         /// <summary>
@@ -490,6 +586,27 @@ namespace Helper.Core.Library
             {
                 result = command.ExecuteScalar();
             });
+            if (result == null) return default(T);
+            return (T)Convert.ChangeType(result, typeof(T));
+        }
+        /// <summary>
+        /// ExecuteScalar
+        /// </summary>
+        /// <typeparam name="T">基类类型，例：int</typeparam>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="commandText">Sql 语句</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <returns></returns>
+        public static dynamic TransactionScalar<T>(DbConnection con, DbTransaction transaction, string commandText, object parameterList = null)
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+
+            object result = null;
+            ExecuteCommand(null, null, commandText, parameterDict, null, CommandType.Text, (DbCommand command) =>
+            {
+                result = command.ExecuteScalar();
+            }, con, transaction);
             if (result == null) return default(T);
             return (T)Convert.ChangeType(result, typeof(T));
         }
@@ -701,6 +818,42 @@ namespace Helper.Core.Library
 
             return ReturnEntityList<T>(connectionString, dataBaseType, commandText, parameterDict, ref pageCount, ref totalCount, propertyMatchList, parameterPageCountName, parameterTotalCountName, commandType, reflectionType);
         }
+        /// <summary>
+        /// 返回实体数据列表
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="commandText">Sql 语句</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static List<T> TransactionEntityList<T>(DbConnection con, DbTransaction transaction, string commandText, object parameterList = null, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+            return ReturnEntityList<T>(null, null, commandText, parameterDict, propertyMatchList, CommandType.Text, reflectionType, con, transaction);
+        }
+        /// <summary>
+        /// 返回实体数据列表
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="commandText">Sql 语句</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="pageCount">页总数，输出</param>
+        /// <param name="totalCount">数据总数，输出</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="parameterPageCountName">页总数参数名称，例如：PageCount</param>
+        /// <param name="parameterTotalCountName">数据总数参数名称，例如：TotalCount</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static List<T> TransactionEntityList<T>(DbConnection con, DbTransaction transaction, string commandText, object parameterList, ref int pageCount, ref int totalCount, object propertyMatchList, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+            return ReturnEntityList<T>(null, null, commandText, parameterDict, ref pageCount, ref totalCount, propertyMatchList, parameterPageCountName, parameterTotalCountName, CommandType.Text, reflectionType, con, transaction);
+        }
         #endregion
 
         #region ToEntity<T> 返回单条查询结果
@@ -733,6 +886,23 @@ namespace Helper.Core.Library
         public static T ToEntity<T>(string connectionString, string dataBaseType, string commandText, object parameterList = null, object propertyMatchList = null, CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
         {
             List<T> dataList = ToEntityList<T>(connectionString, dataBaseType, commandText, parameterList, propertyMatchList, commandType, reflectionType);
+            if (dataList.Count > 0) return dataList[0];
+            return null;
+        }
+        /// <summary>
+        /// 返回实体数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="commandText">Sql 语句</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static T TransactionEntity<T>(DbConnection con, DbTransaction transaction, string commandText, object parameterList = null, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            List<T> dataList = TransactionEntityList<T>(con, transaction, commandText, parameterList, propertyMatchList, reflectionType);
             if (dataList.Count > 0) return dataList[0];
             return null;
         }
@@ -854,6 +1024,33 @@ namespace Helper.Core.Library
         }
         #endregion
 
+        #region 事务处理，Func 函数可以处理所有 Transaction 开头的函数
+        /// <summary>
+        /// 事务处理
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="func">回调函数</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static object Transaction(Func<DbConnection, DbTransaction, object> func)
+        {
+            return Transaction(null, null, func);
+        }
+        /// <summary>
+        /// 事务处理
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="func">回调函数</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static object Transaction(string connectionString, string dataBaseType, Func<DbConnection, DbTransaction, object> func)
+        {
+            return ExecuteTransaction(connectionString, dataBaseType, func);
+        }
+        #endregion
+
         #endregion
 
         #region 逻辑处理私有方法
@@ -915,16 +1112,16 @@ namespace Helper.Core.Library
         }
         #endregion
 
-        private static List<T> ReturnEntityList<T>(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, object propertyMatchList, CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        private static List<T> ReturnEntityList<T>(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, object propertyMatchList, CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression, DbConnection con = null, DbTransaction transaction = null) where T : class, new()
         {
             List<T> dataList = null;
             ExecuteCommand(connectionString, dataBaseType, commandText, parameterList, null, commandType, (DbCommand command) =>
             {
-                dataList = DataReaderToEntityList<T>(command, propertyMatchList, reflectionType);
-            });
+                dataList = DataReaderToEntityList<T>(command, propertyMatchList, reflectionType, con, transaction);
+            }, con, transaction);
             return dataList;
         }
-        private static List<T> ReturnEntityList<T>(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, ref int pageCount, ref int totalCount, object propertyMatchList, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        private static List<T> ReturnEntityList<T>(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, ref int pageCount, ref int totalCount, object propertyMatchList, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression, DbConnection con = null, DbTransaction transaction = null) where T : class, new()
         {
             List<T> dataList = null;
 
@@ -942,27 +1139,184 @@ namespace Helper.Core.Library
 
             ExecuteCommand(connectionString, dataBaseType, commandText, parameterList, outParameterList, commandType, (DbCommand command) =>
             {
-                dataList = DataReaderToEntityList<T>(command, propertyMatchList, reflectionType);
+                dataList = DataReaderToEntityList<T>(command, propertyMatchList, reflectionType, con, transaction);
 
                 if (!string.IsNullOrEmpty(parameterPageCountName)) commandPageCount = (int)command.Parameters["@" + parameterPageCountName].Value;
                 if (!string.IsNullOrEmpty(parameterTotalCountName)) commandTotalCount = (int)command.Parameters["@" + parameterTotalCountName].Value;
-            });
+            }, con, transaction);
 
             pageCount = commandPageCount;
             totalCount = commandTotalCount;
 
             return dataList;
         }
-
-        private static void ExecuteCommand(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, Dictionary<string, object> outParameterList, CommandType commandType = CommandType.Text, Action<DbCommand> callback = null)
+        private static bool ExecuteInsert(string connectionString, string dataBaseType, string tableName, object data, string[] ignorePropertyList = null, DbConnection con = null, DbTransaction transaction = null)
         {
-            DbConnection con = null;
+            Dictionary<string, object> mapperDict = InitEntityToPropertyMapper(data, ignorePropertyList);
+
+            string fieldDataList = INSERT_FIELD_SQL;
+            string fieldParameterList = INSERT_FIELD_PARAMETER_SQL;
+            foreach (KeyValuePair<string, object> keyValueItem in mapperDict)
+            {
+                fieldDataList = string.Format(fieldDataList, keyValueItem.Key, INSERT_FIELD_SQL);
+                fieldParameterList = string.Format(fieldParameterList, keyValueItem.Key, INSERT_FIELD_PARAMETER_SQL);
+            }
+            fieldDataList = StringHelper.TrimChar(string.Format(fieldDataList, "", ""), ",");
+            fieldParameterList = StringHelper.TrimChar(StringHelper.TrimChar(string.Format(fieldParameterList, "", ""), "@"), ",");
+
+            string commandText = string.Format(INSERT_SQL, tableName, fieldDataList, fieldParameterList);
+            if (con == null && transaction == null)
+            {
+                return ExecuteNonQuery(connectionString, dataBaseType, commandText, mapperDict, CommandType.Text) > 0;
+            }
+            else
+            {
+                return TransactionNonQuery(con, transaction, commandText, mapperDict) > 0;
+            }
+        }
+        private static bool ExecuteUpdate<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda, Expression<Func<T, object>> ignoreLambda, string tableName = null, DbConnection con = null, DbTransaction transaction = null) where T : class
+        {
+            Dictionary<string, object> mapperDict = InitEntityToPropertyMapper(data, ignoreLambda != null ? CommonHelper.GetExpressionList<T>(ignoreLambda).ToArray() : null);
+
+            tableName = GetDataBaseTableName<T>(tableName);
+
+            string whereSql = new WhereTranslator().Translate(whereLambda);
+            whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+
+            string fieldParameterList = UPDATE_FIELD_PARAMETER_SQL;
+            foreach (KeyValuePair<string, object> keyValueItem in mapperDict)
+            {
+                fieldParameterList = string.Format(fieldParameterList, keyValueItem.Key, keyValueItem.Key, UPDATE_FIELD_PARAMETER_SQL);
+            }
+            fieldParameterList = StringHelper.TrimChar(fieldParameterList.Substring(0, fieldParameterList.LastIndexOf(",")), ",");
+
+            string commandText = string.Format(UPDATE_SQL, tableName, fieldParameterList, whereSql);
+            if (con == null && transaction == null)
+            {
+                return ExecuteNonQuery(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(mapperDict, data, whereSql), CommandType.Text) > 0;
+            }
+            else
+            {
+                return TransactionNonQuery(con, transaction, commandText, RevisePropertyMapperDict<T>(mapperDict, data, whereSql)) > 0;
+            }
+        }
+        private static bool ExecuteDelete<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda, string tableName = null, DbConnection con = null, DbTransaction transaction = null) where T : class
+        {
+            tableName = GetDataBaseTableName<T>(tableName);
+
+            string whereSql = new WhereTranslator().Translate(whereLambda);
+            whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+
+            string commandText = string.Format(DELETE_SQL, tableName, whereSql);
+
+            if (con == null && transaction == null)
+            {
+                return ExecuteNonQuery(commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), CommandType.Text) > 0;
+            }
+            else
+            {
+                return TransactionNonQuery(con, transaction, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql)) > 0;
+            }
+        }
+        private static K ExecuteFirst<T, K>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, bool withNoLock = true, string tableName = null, DbConnection con = null, DbTransaction transaction = null) where T : class
+        {
+            tableName = GetDataBaseTableName<T>(tableName);
+
+            string withNoLockText = "";
+            if (withNoLock) withNoLockText = "with(nolock)";
+
+            string whereSql = new WhereTranslator().Translate(whereLambda);
+            whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+
+            string commandText = string.Format(FIRST_SQL, CommonHelper.GetExpression<T>(fieldLambda), tableName, withNoLockText, whereSql);
+            if (con == null && transaction == null)
+            {
+                return ExecuteScalar<K>(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), CommandType.Text);
+            }
+            else
+            {
+                return TransactionScalar<K>(con, transaction, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql));
+            }
+        }
+        private static int ExecuteCount<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null, DbConnection con = null, DbTransaction transaction = null) where T : class
+        {
+            tableName = GetDataBaseTableName<T>(tableName);
+
+            string withNoLockText = "";
+            if (withNoLock) withNoLockText = "with(nolock)";
+
+            string commandText = "";
+            if (whereLambda != null)
+            {
+                string whereSql = new WhereTranslator().Translate(whereLambda);
+                whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+
+                commandText = string.Format(COUNT_WHERE_SQL, tableName, withNoLockText, whereSql);
+                if (con == null && transaction == null)
+                {
+                    return ExecuteScalar<int>(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), CommandType.Text);
+                }
+                else
+                {
+                    return TransactionScalar<int>(con, transaction, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql));
+                }
+            }
+            else
+            {
+                commandText = string.Format(COUNT_SQL, tableName, withNoLockText);
+                if (con == null && transaction == null)
+                {
+                    return ExecuteScalar<int>(connectionString, dataBaseType, commandText);
+                }
+                else
+                {
+                    return TransactionScalar<int>(con, transaction, commandText, null);
+                }
+            }
+        }
+        private static T ExecuteSingle<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression, DbConnection con = null, DbTransaction transaction = null) where T : class, new()
+        {
+            string selectFieldSql = "*";
+            if (queryLambda != null)
+            {
+                selectFieldSql = new QueryTranslator().Translate(queryLambda);
+                selectFieldSql = selectFieldSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+            }
+
+            string withNoLockText = "";
+            if (withNoLock) withNoLockText = "with(nolock)";
+
+            string whereSql = new WhereTranslator().Translate(whereLambda);
+            whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+
+            string commandText = string.Format(SINGLE_SQL, selectFieldSql, tableName, withNoLockText, whereSql);
+            if (con == null && transaction == null)
+            {
+                return ToEntity<T>(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), propertyMatchList, CommandType.Text, reflectionType);
+            }
+            else
+            {
+                return TransactionEntity<T>(con, transaction, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), propertyMatchList, reflectionType);
+            }
+        }
+        private static void ExecuteCommand(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, Dictionary<string, object> outParameterList, CommandType commandType = CommandType.Text, Action<DbCommand> callback = null, DbConnection con = null, DbTransaction transaction = null)
+        {
             DbCommand command = null;
             try
             {
-                using (con = CreateDbConnection(connectionString, dataBaseType))
+                if (con == null)
+                {
+                    using (con = CreateDbConnection(connectionString, dataBaseType))
+                    {
+                        command = CreateDbCommand(con, null, commandText, parameterList, outParameterList, commandType);
+                        if (transaction != null) command.Transaction = transaction;
+                        if (callback != null) callback(command);
+                    }
+                }
+                else
                 {
                     command = CreateDbCommand(con, null, commandText, parameterList, outParameterList, commandType);
+                    if (transaction != null) command.Transaction = transaction;
                     if (callback != null) callback(command);
                 }
             }
@@ -977,8 +1331,60 @@ namespace Helper.Core.Library
         }
         private static object ExecuteTransaction<T>(string connectionString, string dataBaseType, List<DataBaseTransactionItem> transactionItemList, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
         {
+            return ExecuteTransaction(connectionString, dataBaseType, (DbConnection con, DbTransaction transaction) =>
+            {
+                object result = null;
+                DbCommand command = null;
+                // 记录输出参数信息
+                Dictionary<string, object> outputParamDict = new Dictionary<string, object>();
+                foreach (DataBaseTransactionItem commandItem in transactionItemList)
+                {
+                    Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(commandItem.ParameterList);
+                    // 如果需要使用之前的输出数据
+                    if (commandItem.InputList != null && commandItem.InputList.Length > 0)
+                    {
+                        foreach (string inputParamItem in commandItem.InputList)
+                        {
+                            if (outputParamDict.ContainsKey(inputParamItem) && parameterDict.ContainsKey(inputParamItem))
+                            {
+                                parameterDict[inputParamItem] = outputParamDict[inputParamItem];
+                            }
+                        }
+                    }
+                    command = CreateDbCommand(con, command, commandItem.CommandText, parameterDict, null, CommandType.Text);
+                    command.Transaction = transaction;
+
+                    if (commandItem.ExecuteType == DataBaseExecuteTypeEnum.ExecuteNonQuery)
+                    {
+                        result = command.ExecuteNonQuery();
+                    }
+                    else if (commandItem.ExecuteType == DataBaseExecuteTypeEnum.ExecuteScalar)
+                    {
+                        result = command.ExecuteScalar();
+                    }
+                    else if (commandItem.ExecuteType == DataBaseExecuteTypeEnum.ToEntityList)
+                    {
+                        result = DataReaderToEntityList<T>(command, commandItem.PropertyMatchList, reflectionType, con, transaction);
+                    }
+                    else if (commandItem.ExecuteType == DataBaseExecuteTypeEnum.ToEntity)
+                    {
+                        List<T> dataList = DataReaderToEntityList<T>(command, commandItem.PropertyMatchList, reflectionType, con, transaction);
+                        if (dataList.Count > 0) result = dataList[0];
+                    }
+                    // 如果输出参数不为空，则记录输出值
+                    if (!string.IsNullOrEmpty(commandItem.OutputName))
+                    {
+                        outputParamDict.Add(commandItem.OutputName, result);
+                    }
+                }
+
+                return result;
+
+            });
+        }
+        private static object ExecuteTransaction(string connectionString, string dataBaseType, Func<DbConnection, DbTransaction, object> func)
+        {
             DbConnection con = null;
-            DbCommand command = null;
             DbTransaction transaction = null;
             try
             {
@@ -986,48 +1392,12 @@ namespace Helper.Core.Library
                 using (con = CreateDbConnection(connectionString, dataBaseType))
                 {
                     transaction = con.BeginTransaction();
-                    // 记录输出参数信息
-                    Dictionary<string, object> outputParamDict = new Dictionary<string, object>();
-                    foreach (DataBaseTransactionItem commandItem in transactionItemList)
-                    {
-                        Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(commandItem.ParameterList);
-                        // 如果需要使用之前的输出数据
-                        if (commandItem.InputList != null && commandItem.InputList.Length > 0)
-                        {
-                            foreach (string inputParamItem in commandItem.InputList)
-                            {
-                                if (outputParamDict.ContainsKey(inputParamItem) && parameterDict.ContainsKey(inputParamItem))
-                                {
-                                    parameterDict[inputParamItem] = outputParamDict[inputParamItem];
-                                }
-                            }
-                        }
-                        command = CreateDbCommand(con, command, commandItem.CommandText, parameterDict, null, CommandType.Text);
-                        command.Transaction = transaction;
 
-                        if (commandItem.ExecuteType == DataBaseExecuteTypeEnum.ExecuteNonQuery)
-                        {
-                            result = command.ExecuteNonQuery();
-                        }
-                        else if (commandItem.ExecuteType == DataBaseExecuteTypeEnum.ExecuteScalar)
-                        {
-                            result = command.ExecuteScalar();
-                        }
-                        else if (commandItem.ExecuteType == DataBaseExecuteTypeEnum.ToEntityList)
-                        {
-                            result = DataReaderToEntityList<T>(command, commandItem.PropertyMatchList, reflectionType);
-                        }
-                        else if (commandItem.ExecuteType == DataBaseExecuteTypeEnum.ToEntity)
-                        {
-                            List<T> dataList = DataReaderToEntityList<T>(command, commandItem.PropertyMatchList, reflectionType);
-                            if (dataList.Count > 0) result = dataList[0];
-                        }
-                        // 如果输出参数不为空，则记录输出值
-                        if (!string.IsNullOrEmpty(commandItem.OutputName))
-                        {
-                            outputParamDict.Add(commandItem.OutputName, result);
-                        }
+                    if (func != null)
+                    {
+                        result = func(con, transaction);
                     }
+
                     try
                     {
                         transaction.Commit();
@@ -1044,10 +1414,6 @@ namespace Helper.Core.Library
             {
                 throw;
             }
-            finally
-            {
-                if (command != null) command.Dispose();
-            }
         }
         private static void ExecuteDataReader(Action<DbDataReader> callback, DbCommand command)
         {
@@ -1060,15 +1426,15 @@ namespace Helper.Core.Library
                 }
             }
         }
-        private static List<T> DataReaderToEntityList<T>(DbCommand command, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        private static List<T> DataReaderToEntityList<T>(DbCommand command, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression, DbConnection con = null, DbTransaction transaction = null) where T : class, new()
         {
             List<T> dataList = new List<T>();
-            
+
             bool initStatus = false;
             List<string> columnNameList = null;
             Dictionary<PropertyInfo, string> columnNameDict = null;
 
-            using (DbDataReader dataReader = command.ExecuteReader(CommandBehavior.CloseConnection))
+            using (DbDataReader dataReader = (con == null && transaction == null) ? command.ExecuteReader(CommandBehavior.CloseConnection) : command.ExecuteReader())
             {
                 dynamic propertySetDict = null;
                 if (reflectionType != ReflectionTypeEnum.Original) propertySetDict = ReflectionExtendHelper.PropertySetCallDict<T>(reflectionType);
@@ -1094,7 +1460,7 @@ namespace Helper.Core.Library
         private static T DataReaderToEntity<T>(DbDataReader reader, dynamic propertySetDict, List<string> columnNameList, Dictionary<PropertyInfo, string> columnNameDict) where T : class, new()
         {
             T t = ReflectionGenericHelper.New<T>();
-            foreach(var keyValueItem in columnNameDict)
+            foreach (var keyValueItem in columnNameDict)
             {
                 if (columnNameList.IndexOf(keyValueItem.Value) >= 0)
                 {
@@ -1175,7 +1541,7 @@ namespace Helper.Core.Library
                         if (groupCollection != null && groupCollection.Count >= 2)
                         {
                             string propertyName = groupCollection[1].Value;
-                            if(!mapperDict.ContainsKey(propertyName))
+                            if (!mapperDict.ContainsKey(propertyName))
                             {
                                 mapperDict.Add(propertyName, ReflectionHelper.GetPropertyValue(data, propertyName));
                             }
