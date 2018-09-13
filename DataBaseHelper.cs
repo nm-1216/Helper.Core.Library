@@ -90,15 +90,9 @@ namespace Helper.Core.Library
         private const string INSERT_SQL = "insert into {0}({1})values({2})";
 
         private const string UPDATE_FIELD_PARAMETER_SQL = ",{0}=@{1}{2}";
-        private const string UPDATE_SQL = "update {0} set {1} where {2} ";
+        private const string UPDATE_SQL = "update {0} set {1} where {2}";
 
-        private const string DELETE_SQL = "delete from {0} where {1} ";
-        private const string FIRST_SQL = "select {0} from {1} {2} where {3} ";
-
-        private const string COUNT_SQL = "select count(0) from {1} {2}";
-        private const string COUNT_WHERE_SQL = "select count(0) from {1} {2} where {3}";
-
-        private const string SINGLE_SQL = "select {0} from {1} {2} where {3}";
+        private const string DELETE_SQL = "delete from {0} where {1}";
 
         private static readonly object lockItem = new object();
         private static readonly Dictionary<string, Dictionary<PropertyInfo, string>> PropertyAttributeDict = new Dictionary<string, Dictionary<PropertyInfo, string>>();
@@ -298,14 +292,14 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <typeparam name="K">简单类型</typeparam>
         /// <param name="data">数据</param>
-        /// <param name="fieldLambda">字段</param>
+        /// <param name="queryLambda">字段</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <returns></returns>
-        public static K First<T, K>(object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, bool withNoLock = true, string tableName = null) where T : class
+        public static K First<T, K>(object data, Expression<Func<T, object>> queryLambda, Expression<Func<T, bool>> whereLambda, bool withNoLock = true, string tableName = null) where T : class
         {
-            return First<T, K>(null, null, data, fieldLambda, whereLambda, withNoLock, tableName);
+            return First<T, K>(null, null, data, queryLambda, whereLambda, tableName, withNoLock);
         }
         /// <summary>
         /// 返回单个字段
@@ -315,14 +309,14 @@ namespace Helper.Core.Library
         /// <param name="connectionString">连接字符串</param>
         /// <param name="dataBaseType">数据库类型</param>
         /// <param name="data">数据</param>
-        /// <param name="fieldLambda">字段</param>
+        /// <param name="queryLambda">字段</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <returns></returns>
-        public static K First<T, K>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, bool withNoLock = true, string tableName = null) where T : class
+        public static K First<T, K>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> queryLambda, Expression<Func<T, bool>> whereLambda, string tableName = null, bool withNoLock = true) where T : class
         {
-            return ExecuteFirst<T, K>(connectionString, dataBaseType, data, fieldLambda, whereLambda, withNoLock, tableName, null, null);
+            return ExecuteFirst<T, K>(connectionString, dataBaseType, data, queryLambda, whereLambda, withNoLock, tableName, null, null);
         }
         /// <summary>
         /// 返回单个字段
@@ -332,14 +326,14 @@ namespace Helper.Core.Library
         /// <param name="con">DbConnection</param>
         /// <param name="transaction">DbTransaction</param>
         /// <param name="data">数据</param>
-        /// <param name="fieldLambda">字段</param>
+        /// <param name="queryLambda">字段</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <returns></returns>
-        public static K TransactionFirst<T, K>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, bool withNoLock = true, string tableName = null) where T : class
+        public static K TransactionFirst<T, K>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, object>> queryLambda, Expression<Func<T, bool>> whereLambda, string tableName = null, bool withNoLock = true) where T : class
         {
-            return ExecuteFirst<T, K>(null, null, data, fieldLambda, whereLambda, withNoLock, tableName, con, transaction);
+            return ExecuteFirst<T, K>(null, null, data, queryLambda, whereLambda, withNoLock, tableName, con, transaction);
         }
         #endregion
 
@@ -349,15 +343,15 @@ namespace Helper.Core.Library
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="data">数据</param>
-        /// <param name="fieldLambda">字段</param>
+        /// <param name="queryLambda">字段</param>
         /// <param name="whereLambda">条件</param>
         /// <param name="identityID">唯一标识，自增编号</param>
-        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <returns></returns>
-        public static bool Exists<T>(object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, int identityID, bool withNoLock = true, string tableName = null) where T : class
+        public static bool Exists<T>(object data, Expression<Func<T, object>> queryLambda, Expression<Func<T, bool>> whereLambda, int identityID, string tableName = null, bool withNoLock = true) where T : class
         {
-            return Exists<T>(null, null, data, fieldLambda, whereLambda, identityID, withNoLock, tableName);
+            return Exists<T>(null, null, data, queryLambda, whereLambda, identityID, tableName, withNoLock);
         }
         /// <summary>
         /// 是否存在
@@ -366,17 +360,32 @@ namespace Helper.Core.Library
         /// <param name="connectionString">连接字符串</param>
         /// <param name="dataBaseType">数据库类型</param>
         /// <param name="data">数据</param>
-        /// <param name="fieldLambda">字段</param>
+        /// <param name="queryLambda">字段</param>
         /// <param name="whereLambda">条件</param>
         /// <param name="identityID">唯一标识，自增编号</param>
-        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <returns></returns>
-        public static bool Exists<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, int identityID, bool withNoLock = true, string tableName = null) where T : class
+        public static bool Exists<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> queryLambda, Expression<Func<T, bool>> whereLambda, int identityID, string tableName = null, bool withNoLock = true) where T : class
         {
-            int result = First<T, int>(connectionString, dataBaseType, data, fieldLambda, whereLambda, withNoLock, tableName);
-            if (identityID == 0) return result > 0;
-            return result == 0 ? false : (result != identityID);
+            return ExecuteExists<T>(connectionString, dataBaseType, data, queryLambda, whereLambda, identityID, tableName, withNoLock, null, null);
+        }
+        /// <summary>
+        /// 是否存在
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="data">数据</param>
+        /// <param name="queryLambda">字段</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="identityID">唯一标识，自增编号</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
+        /// <returns></returns>
+        public static bool TransactionExists<T>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, object>> queryLambda, Expression<Func<T, bool>> whereLambda, int identityID, string tableName = null, bool withNoLock = true) where T : class
+        {
+            return ExecuteExists<T>(null, null, data, queryLambda, whereLambda, identityID, tableName, withNoLock, con, transaction);
         }
         #endregion
 
@@ -387,12 +396,12 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="data">数据</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <returns></returns>
-        public static int Count<T>(object data, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null) where T : class
+        public static int Count<T>(object data, Expression<Func<T, bool>> whereLambda = null, string tableName = null, bool withNoLock = true) where T : class
         {
-            return Count<T>(null, null, data, whereLambda, withNoLock, tableName);
+            return Count<T>(null, null, data, whereLambda, tableName, withNoLock);
         }
         /// <summary>
         /// 查询总数
@@ -402,10 +411,10 @@ namespace Helper.Core.Library
         /// <param name="dataBaseType">数据库类型</param>
         /// <param name="data">数据</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <returns></returns>
-        public static int Count<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null) where T : class
+        public static int Count<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda = null, string tableName = null, bool withNoLock = true) where T : class
         {
             return ExecuteCount<T>(connectionString, dataBaseType, data, whereLambda, withNoLock, tableName, null, null);
         }
@@ -417,10 +426,10 @@ namespace Helper.Core.Library
         /// <param name="transaction">DbTransaction</param>
         /// <param name="data">数据</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <returns></returns>
-        public static int TransactionCount<T>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null) where T : class
+        public static int TransactionCount<T>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, bool>> whereLambda = null, string tableName = null, bool withNoLock = true) where T : class
         {
             return ExecuteCount<T>(null, null, data, whereLambda, withNoLock, tableName, con, transaction);
         }
@@ -434,14 +443,14 @@ namespace Helper.Core.Library
         /// <param name="data">数据</param>
         /// <param name="queryLambda">字段</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="reflectionType">反射类型</param>
         /// <returns></returns>
-        public static T Single<T>(object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        public static T Single<T>(object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, string tableName = null, object propertyMatchList = null, bool withNoLock = true, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
         {
-            return Single<T>(null, null, data, queryLambda, whereLambda, withNoLock, tableName, propertyMatchList, reflectionType);
+            return Single<T>(null, null, data, queryLambda, whereLambda, tableName, propertyMatchList, withNoLock, reflectionType);
         }
         /// <summary>
         /// 返回单条查询语句
@@ -452,12 +461,12 @@ namespace Helper.Core.Library
         /// <param name="data">数据</param>
         /// <param name="queryLambda">字段</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="reflectionType">反射类型</param>
         /// <returns></returns>
-        public static T Single<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        public static T Single<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, string tableName = null, object propertyMatchList = null, bool withNoLock = true, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
         {
             return ExecuteSingle<T>(connectionString, dataBaseType, data, queryLambda, whereLambda, withNoLock, tableName, propertyMatchList, reflectionType, null, null);
         }
@@ -470,14 +479,75 @@ namespace Helper.Core.Library
         /// <param name="data">数据</param>
         /// <param name="queryLambda">字段</param>
         /// <param name="whereLambda">条件</param>
-        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
         /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
         /// <param name="reflectionType">反射类型</param>
         /// <returns></returns>
-        public static T TransactionSingle<T>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        public static T TransactionSingle<T>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, string tableName = null, object propertyMatchList = null, bool withNoLock = true, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
         {
             return ExecuteSingle<T>(null, null, data, queryLambda, whereLambda, withNoLock, tableName, propertyMatchList, reflectionType, con, transaction);
+        }
+        #endregion
+
+        #region More 根据条件查询多条数据
+        /// <summary>
+        /// 查询多条数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="data">数据</param>
+        /// <param name="queryLambda">字段</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="orderLambda">排序</param>
+        /// <param name="orderDesc">是否倒序</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static List<T> More<T>(object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, Expression<Func<T, object>> orderLambda = null, bool orderDesc = true, string tableName = null, object propertyMatchList = null, bool withNoLock = true, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            return More<T>(null, null, data, queryLambda, whereLambda, orderLambda, orderDesc, tableName, propertyMatchList, withNoLock, reflectionType);
+        }
+        /// <summary>
+        /// 查询多条数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="data">数据</param>
+        /// <param name="queryLambda">字段</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="orderLambda">排序</param>
+        /// <param name="orderDesc">是否倒序</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static List<T> More<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, Expression<Func<T, object>> orderLambda = null, bool orderDesc = true, string tableName = null, object propertyMatchList = null, bool withNoLock = true, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            return ExecuteMore<T>(connectionString, dataBaseType, data, queryLambda, whereLambda, orderLambda, orderDesc, tableName, propertyMatchList, withNoLock, reflectionType, null, null);
+        }
+        /// <summary>
+        /// 查询多条数据
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="data">数据</param>
+        /// <param name="queryLambda">字段</param>
+        /// <param name="whereLambda">条件</param>
+        /// <param name="orderLambda">排序</param>
+        /// <param name="orderDesc">是否倒序</param>
+        /// <param name="tableName">表名，当 T 与 表名不同时指定</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="withNoLock">是否 with(nolock)</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static List<T> TransactionMore<T>(DbConnection con, DbTransaction transaction, object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, Expression<Func<T, object>> orderLambda = null, bool orderDesc = true, string tableName = null, object propertyMatchList = null, bool withNoLock = true, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            return ExecuteMore<T>(null, null, data, queryLambda, whereLambda, orderLambda, orderDesc, tableName, propertyMatchList, withNoLock, reflectionType, con, transaction);
         }
         #endregion
 
@@ -1218,17 +1288,25 @@ namespace Helper.Core.Library
                 return TransactionNonQuery(con, transaction, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql)) > 0;
             }
         }
-        private static K ExecuteFirst<T, K>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> fieldLambda, Expression<Func<T, bool>> whereLambda, bool withNoLock = true, string tableName = null, DbConnection con = null, DbTransaction transaction = null) where T : class
+        private static K ExecuteFirst<T, K>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> queryLambda, Expression<Func<T, bool>> whereLambda, bool withNoLock = true, string tableName = null, DbConnection con = null, DbTransaction transaction = null) where T : class
         {
-            tableName = GetDataBaseTableName<T>(tableName);
+            string whereSql = "";
 
-            string withNoLockText = "";
-            if (withNoLock) withNoLockText = "with(nolock)";
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("select ");
+            stringBuilder.Append(GetQueryFieldSql<T>(queryLambda));
+            stringBuilder.Append(" from ");
+            stringBuilder.Append(GetDataBaseTableName<T>(tableName));
+            stringBuilder.Append(" ");
+            stringBuilder.Append(GetWithNoLockSql(withNoLock));
+            stringBuilder.Append(" ");
+            if (whereLambda != null)
+            {
+                whereSql = GetWhereConditionSql<T>(whereLambda);
+                stringBuilder.Append(whereSql);
+            }
 
-            string whereSql = new WhereTranslator().Translate(whereLambda);
-            whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
-
-            string commandText = string.Format(FIRST_SQL, CommonHelper.GetExpression<T>(fieldLambda), tableName, withNoLockText, whereSql);
+            string commandText = stringBuilder.ToString();
             if (con == null && transaction == null)
             {
                 return ExecuteScalar<K>(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), CommandType.Text);
@@ -1238,58 +1316,65 @@ namespace Helper.Core.Library
                 return TransactionScalar<K>(con, transaction, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql));
             }
         }
-        private static int ExecuteCount<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null, DbConnection con = null, DbTransaction transaction = null) where T : class
+        private static bool ExecuteExists<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> queryLambda, Expression<Func<T, bool>> whereLambda, int identityID, string tableName = null, bool withNoLock = true, DbConnection con = null, DbTransaction transaction = null) where T : class
         {
-            tableName = GetDataBaseTableName<T>(tableName);
-
-            string withNoLockText = "";
-            if (withNoLock) withNoLockText = "with(nolock)";
-
-            string commandText = "";
-            if (whereLambda != null)
+            int result = 0;
+            if (con == null && transaction == null)
             {
-                string whereSql = new WhereTranslator().Translate(whereLambda);
-                whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
-
-                commandText = string.Format(COUNT_WHERE_SQL, tableName, withNoLockText, whereSql);
-                if (con == null && transaction == null)
-                {
-                    return ExecuteScalar<int>(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), CommandType.Text);
-                }
-                else
-                {
-                    return TransactionScalar<int>(con, transaction, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql));
-                }
+                result = First<T, int>(connectionString, dataBaseType, data, queryLambda, whereLambda, tableName, withNoLock);
             }
             else
             {
-                commandText = string.Format(COUNT_SQL, tableName, withNoLockText);
-                if (con == null && transaction == null)
-                {
-                    return ExecuteScalar<int>(connectionString, dataBaseType, commandText);
-                }
-                else
-                {
-                    return TransactionScalar<int>(con, transaction, commandText, null);
-                }
+                result = TransactionFirst<T, int>(con, transaction, data, queryLambda, whereLambda, tableName, withNoLock);
+            }
+            if (identityID == 0) return result > 0;
+            return result == 0 ? false : (result != identityID);
+        }
+        private static int ExecuteCount<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null, DbConnection con = null, DbTransaction transaction = null) where T : class
+        {
+            string whereSql = "";
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("select count(0) from ");
+            stringBuilder.Append(GetDataBaseTableName<T>(tableName));
+            stringBuilder.Append(" ");
+            stringBuilder.Append(GetWithNoLockSql(withNoLock));
+            stringBuilder.Append(" ");
+            if (whereLambda != null)
+            {
+                whereSql = GetWhereConditionSql<T>(whereLambda);
+                stringBuilder.Append(whereSql);
+            }
+
+            string commandText = stringBuilder.ToString();
+            if (con == null && transaction == null)
+            {
+                return ExecuteScalar<int>(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), CommandType.Text);
+            }
+            else
+            {
+                return TransactionScalar<int>(con, transaction, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql));
             }
         }
         private static T ExecuteSingle<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, bool withNoLock = true, string tableName = null, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression, DbConnection con = null, DbTransaction transaction = null) where T : class, new()
         {
-            string selectFieldSql = "*";
-            if (queryLambda != null)
+            string whereSql = "";
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("select ");
+            stringBuilder.Append(GetQueryFieldSql<T>(queryLambda));
+            stringBuilder.Append(" from ");
+            stringBuilder.Append(GetDataBaseTableName<T>(tableName));
+            stringBuilder.Append(" ");
+            stringBuilder.Append(GetWithNoLockSql(withNoLock));
+            stringBuilder.Append(" ");
+            if (whereLambda != null)
             {
-                selectFieldSql = new QueryTranslator().Translate(queryLambda);
-                selectFieldSql = selectFieldSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+                whereSql = GetWhereConditionSql<T>(whereLambda);
+                stringBuilder.Append(whereSql);
             }
 
-            string withNoLockText = "";
-            if (withNoLock) withNoLockText = "with(nolock)";
-
-            string whereSql = new WhereTranslator().Translate(whereLambda);
-            whereSql = whereSql.Replace(string.Format("[{0}].", typeof(T).Name), "");
-
-            string commandText = string.Format(SINGLE_SQL, selectFieldSql, tableName, withNoLockText, whereSql);
+            string commandText = stringBuilder.ToString();
             if (con == null && transaction == null)
             {
                 return ToEntity<T>(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), propertyMatchList, CommandType.Text, reflectionType);
@@ -1299,6 +1384,45 @@ namespace Helper.Core.Library
                 return TransactionEntity<T>(con, transaction, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), propertyMatchList, reflectionType);
             }
         }
+        private static List<T> ExecuteMore<T>(string connectionString, string dataBaseType, object data, Expression<Func<T, object>> queryLambda = null, Expression<Func<T, bool>> whereLambda = null, Expression<Func<T, object>> orderLambda = null, bool orderDesc = true, string tableName = null, object propertyMatchList = null, bool withNoLock = true, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression, DbConnection con = null, DbTransaction transaction = null) where T : class, new()
+        {
+            string descSql = "asc";
+            if (orderDesc) descSql = "desc";
+
+            string whereSql = "";
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("select ");
+            stringBuilder.Append(GetQueryFieldSql<T>(queryLambda));
+            stringBuilder.Append(" from ");
+            stringBuilder.Append(GetDataBaseTableName<T>(tableName));
+            stringBuilder.Append(" ");
+            stringBuilder.Append(GetWithNoLockSql(withNoLock));
+            stringBuilder.Append(" ");
+            if(whereLambda != null)
+            {
+                whereSql = GetWhereConditionSql<T>(whereLambda);
+                stringBuilder.Append(whereSql);
+            }
+            stringBuilder.Append(" ");
+            if(orderLambda != null)
+            {
+                stringBuilder.Append(GetOrderConditionSql<T>(orderLambda));
+                stringBuilder.Append(" ");
+                stringBuilder.Append(descSql);
+            }
+
+            string commandText = stringBuilder.ToString();
+            if (con == null && transaction == null)
+            {
+                return ToEntityList<T>(connectionString, dataBaseType, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), propertyMatchList, CommandType.Text, reflectionType);
+            }
+            else
+            {
+                return TransactionEntityList<T>(con, transaction, commandText, RevisePropertyMapperDict<T>(new Dictionary<string, object>(), data, whereSql), propertyMatchList, reflectionType);
+            }
+        }
+        
         private static void ExecuteCommand(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, Dictionary<string, object> outParameterList, CommandType commandType = CommandType.Text, Action<DbCommand> callback = null, DbConnection con = null, DbTransaction transaction = null)
         {
             DbCommand command = null;
@@ -1529,7 +1653,7 @@ namespace Helper.Core.Library
         }
         private static Dictionary<string, object> RevisePropertyMapperDict<T>(Dictionary<string, object> mapperDict, object data, string whereSql) where T : class
         {
-            if (whereSql.IndexOf("@") > 0)
+            if (!string.IsNullOrEmpty(whereSql) && whereSql.IndexOf("@") > 0)
             {
                 Regex regex = new Regex(@"@([a-z0-9]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
                 MatchCollection matchCollection = regex.Matches(whereSql);
@@ -1559,6 +1683,38 @@ namespace Helper.Core.Library
             }
             if (string.IsNullOrEmpty(tableName)) tableName = typeof(T).Name;
             return tableName;
+        }
+        private static string GetQueryFieldSql<T>(Expression<Func<T, object>> lambda) where T : class
+        {
+            string sql = "*";
+            if (lambda != null)
+            {
+                sql = new QueryTranslator().Translate(lambda);
+                sql = sql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+            }
+            return sql;
+        }
+        private static string GetWhereConditionSql<T>(Expression<Func<T, bool>> lambda)
+        {
+            string sql = new WhereTranslator().Translate(lambda);
+            sql = sql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+            return sql;
+        }
+        private static string GetOrderConditionSql<T>(Expression<Func<T, object>> lambda) where T : class
+        {
+            string sql = "*";
+            if (lambda != null)
+            {
+                sql = new OrderTranslator().Translate(lambda);
+                sql = sql.Replace(string.Format("[{0}].", typeof(T).Name), "");
+            }
+            return sql;
+        }
+        private static string GetWithNoLockSql(bool withNoLock)
+        {
+            string sql = "";
+            if (withNoLock) sql = "with(nolock)";
+            return sql;
         }
         #endregion
     }
