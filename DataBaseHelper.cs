@@ -1302,6 +1302,7 @@ namespace Helper.Core.Library
             stringBuilder.Append(" ");
             if (whereLambda != null)
             {
+                stringBuilder.Append(" where ");
                 whereSql = GetWhereConditionSql<T>(whereLambda);
                 stringBuilder.Append(whereSql);
             }
@@ -1342,6 +1343,7 @@ namespace Helper.Core.Library
             stringBuilder.Append(" ");
             if (whereLambda != null)
             {
+                stringBuilder.Append(" where ");
                 whereSql = GetWhereConditionSql<T>(whereLambda);
                 stringBuilder.Append(whereSql);
             }
@@ -1370,6 +1372,7 @@ namespace Helper.Core.Library
             stringBuilder.Append(" ");
             if (whereLambda != null)
             {
+                stringBuilder.Append(" where ");
                 whereSql = GetWhereConditionSql<T>(whereLambda);
                 stringBuilder.Append(whereSql);
             }
@@ -1401,12 +1404,14 @@ namespace Helper.Core.Library
             stringBuilder.Append(" ");
             if(whereLambda != null)
             {
+                stringBuilder.Append(" where ");
                 whereSql = GetWhereConditionSql<T>(whereLambda);
                 stringBuilder.Append(whereSql);
             }
             stringBuilder.Append(" ");
             if(orderLambda != null)
             {
+                stringBuilder.Append(" order by ");
                 stringBuilder.Append(GetOrderConditionSql<T>(orderLambda));
                 stringBuilder.Append(" ");
                 stringBuilder.Append(descSql);
