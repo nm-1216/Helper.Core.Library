@@ -1085,21 +1085,7 @@ namespace Helper.Core.Library
             {
                 using (con = CreateDbConnection(connectionString))
                 {
-                    using (SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(connectionString, SqlBulkCopyOptions.UseInternalTransaction))
-                    {
-                        sqlBulkCopy.DestinationTableName = tableName;
-
-                        int columnCount = dataTable.Columns.Count;
-                        DataColumn dataColumn = null;
-
-                        for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
-                        {
-                            dataColumn = dataTable.Columns[columnIndex];
-                            sqlBulkCopy.ColumnMappings.Add(dataColumn.ColumnName, dataColumn.ColumnName);
-                        }
-
-                        sqlBulkCopy.WriteToServer(dataTable);
-                    }
+                    ExecuteBatchDataTable(new SqlBulkCopy(connectionString, SqlBulkCopyOptions.UseInternalTransaction), tableName, dataTable);
                     return true;
                 }
             }
@@ -1122,21 +1108,7 @@ namespace Helper.Core.Library
         public static void TransactionDataTableBatchImport(DbConnection con, DbTransaction transaction, string tableName, DataTable dataTable)
         {
             if (DataBaseType != DataBaseTypeEnum.Sql) throw new Exception(BatchImportException);
-            using (SqlBulkCopy sqlBulkCopy = new SqlBulkCopy((SqlConnection)con, SqlBulkCopyOptions.Default, (SqlTransaction)transaction))
-            {
-                sqlBulkCopy.DestinationTableName = tableName;
-
-                int columnCount = dataTable.Columns.Count;
-                DataColumn dataColumn = null;
-
-                for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
-                {
-                    dataColumn = dataTable.Columns[columnIndex];
-                    sqlBulkCopy.ColumnMappings.Add(dataColumn.ColumnName, dataColumn.ColumnName);
-                }
-
-                sqlBulkCopy.WriteToServer(dataTable);
-            }
+            ExecuteBatchDataTable(new SqlBulkCopy((SqlConnection)con, SqlBulkCopyOptions.Default, (SqlTransaction)transaction), tableName, dataTable);
         }
         #endregion
 
@@ -1599,6 +1571,24 @@ namespace Helper.Core.Library
                 {
                     callback(dataReader);
                 }
+            }
+        }
+        private static void ExecuteBatchDataTable(SqlBulkCopy sqlBulkCopy, string tableName, DataTable dataTable)
+        {
+            using (sqlBulkCopy)
+            {
+                sqlBulkCopy.DestinationTableName = tableName;
+
+                int columnCount = dataTable.Columns.Count;
+                DataColumn dataColumn = null;
+
+                for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                {
+                    dataColumn = dataTable.Columns[columnIndex];
+                    sqlBulkCopy.ColumnMappings.Add(dataColumn.ColumnName, dataColumn.ColumnName);
+                }
+
+                sqlBulkCopy.WriteToServer(dataTable);
             }
         }
         private static List<T> DataReaderToEntityList<T>(DbCommand command, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression, DbConnection con = null, DbTransaction transaction = null) where T : class, new()
