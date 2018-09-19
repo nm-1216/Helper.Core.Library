@@ -95,7 +95,6 @@ namespace Helper.Core.Library
         /// <param name="append">是否附加</param>
         /// <param name="password">密码</param>
         /// <param name="compressLevel">压缩等级，取值范围：0-9</param>
-        /// <param name="isRoot">是否根目录 为 False 时会在压缩文件中创建目录名</param>
         /// <returns></returns>
         public static bool Compress(string directoryPath, string zipPath, bool append, string password = "", int compressLevel = 6, bool isRoot = false)
         {
@@ -288,14 +287,15 @@ namespace Helper.Core.Library
                 if (!isRoot)
                 {
                     entryDirectoryPath = Path.Combine(parentDirectoryPath, Path.GetFileName(directoryPath) + "\\");
+
+                    zipEntry = new ZipEntry(entryDirectoryPath);
+                    zipStream.PutNextEntry(zipEntry);
+                    zipStream.Flush();
                 }
                 else
                 {
                     entryDirectoryPath = Path.Combine(parentDirectoryPath);
                 }
-                zipEntry = new ZipEntry(entryDirectoryPath);
-                zipStream.PutNextEntry(zipEntry);
-                zipStream.Flush();
 
                 string[] filePathList = Directory.GetFiles(directoryPath);
                 foreach (string filePath in filePathList)
