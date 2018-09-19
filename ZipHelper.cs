@@ -43,6 +43,51 @@ namespace Helper.Core.Library
 
         #region 对外公开方法
         /// <summary>
+        /// 压缩文件列表
+        /// </summary>
+        /// <param name="filePathList">文件地址列表</param>
+        /// <param name="directoryPath">临时存放文件目录</param>
+        /// <param name="zipPath">Zip 文件路径</param>
+        /// <param name="append">是否附加</param>
+        /// <param name="password">密码</param>
+        /// <param name="compressLevel">压缩等级，取值范围：0-9</param>
+        /// <returns></returns>
+        public static bool Compress(List<string> filePathList, string directoryPath, string zipPath, bool append, string password = "", int compressLevel = 6)
+        {
+            try
+            {
+                // 如果临时目录不存在
+                if (!Directory.Exists(directoryPath))
+                {
+                    // 创建临时目录
+                    bool directoryResult = FileHelper.CreateDirectory(directoryPath, true);
+                    if (!directoryResult) return false;
+                }
+
+                // 拷贝数据到临时文件夹
+                foreach(string filePath in filePathList)
+                {
+                    if(File.Exists(filePath))
+                    {
+                        string targetPath = directoryPath + "//" + Path.GetFileName(filePath);
+                        File.Copy(filePath, targetPath, true);
+                    }
+                }
+
+                bool operaterResult = Compress(directoryPath, zipPath, append, password, compressLevel, true);
+                if (!operaterResult) return operaterResult;
+
+                // 删除临时目录
+                Directory.Delete(directoryPath, true);
+
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        /// <summary>
         /// 压缩文件夹
         /// </summary>
         /// <param name="directoryPath">压缩目录</param>
@@ -50,8 +95,9 @@ namespace Helper.Core.Library
         /// <param name="append">是否附加</param>
         /// <param name="password">密码</param>
         /// <param name="compressLevel">压缩等级，取值范围：0-9</param>
+        /// <param name="isRoot">是否根目录 为 False 时会在压缩文件中创建目录名</param>
         /// <returns></returns>
-        public static bool Compress(string directoryPath, string zipPath, bool append, string password = "", int compressLevel = 6)
+        public static bool Compress(string directoryPath, string zipPath, bool append, string password = "", int compressLevel = 6, bool isRoot = false)
         {
             // 如果目录不存在
             if (!Directory.Exists(directoryPath)) throw new Exception(DirectoryNotExistsException);
@@ -78,7 +124,7 @@ namespace Helper.Core.Library
             {
                 zipStream.SetLevel(compressLevel);
                 if (!string.IsNullOrEmpty(password)) zipStream.Password = password;
-                result = CompressDirectory(directoryPath, zipStream);
+                result = CompressDirectory(directoryPath, zipStream, "", isRoot);
                 zipStream.Finish();
             }
 
@@ -229,7 +275,7 @@ namespace Helper.Core.Library
         /// <param name="zipStream"></param>
         /// <param name="parentDirectoryPath"></param>
         /// <returns></returns>
-        private static bool CompressDirectory(string directoryPath, ZipOutputStream zipStream, string parentDirectoryPath = "")
+        private static bool CompressDirectory(string directoryPath, ZipOutputStream zipStream, string parentDirectoryPath = "", bool isRoot = false)
         {
             ZipEntry zipEntry = null;
             FileStream fileStream = null;
@@ -239,8 +285,14 @@ namespace Helper.Core.Library
 
             try
             {
-                entryDirectoryPath = Path.Combine(parentDirectoryPath, Path.GetFileName(directoryPath) + "\\");
-
+                if (!isRoot)
+                {
+                    entryDirectoryPath = Path.Combine(parentDirectoryPath, Path.GetFileName(directoryPath) + "\\");
+                }
+                else
+                {
+                    entryDirectoryPath = Path.Combine(parentDirectoryPath);
+                }
                 zipEntry = new ZipEntry(entryDirectoryPath);
                 zipStream.PutNextEntry(zipEntry);
                 zipStream.Flush();
@@ -278,7 +330,7 @@ namespace Helper.Core.Library
             string[] childDirectoryPathList = Directory.GetDirectories(directoryPath);
             foreach (string childDirectoryPath in childDirectoryPathList)
             {
-                if (!CompressDirectory(childDirectoryPath, zipStream, entryDirectoryPath)) return false;
+                if (!CompressDirectory(childDirectoryPath, zipStream, entryDirectoryPath, isRoot)) return false;
             }
             return result;
         }
