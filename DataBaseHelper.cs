@@ -1034,7 +1034,7 @@ namespace Helper.Core.Library
         /// 实体数据列表批量导入
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="connectionString"></param>
+        /// <param name="connectionString">连接字符串</param>
         /// <param name="tableName">数据库表名称</param>
         /// <param name="dataList">实体类型数据列表</param>
         /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
@@ -1047,6 +1047,26 @@ namespace Helper.Core.Library
             DataTable dataTable = DataTableHelper.ToDataTable<T>(dataList, propertyMatchList, propertyList, propertyContain, reflectionType);
             if (dataTable != null) return DataTableBatchImport(connectionString, tableName, dataTable);
             return false;
+        }
+        /// <summary>
+        /// 实体数据列表批量导入
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="tableName">数据库表名称</param>
+        /// <param name="dataList">实体类型数据列表</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="propertyList">属性列表，如果指定，则按指定属性列表生成 DataTable 数据</param>
+        /// <param name="propertyContain">是否包含，true 属性包含，flase 属性排除</param>
+        /// <param name="reflectionType">反射类型</param>
+        public static void TransactionEntityListBatchImport<T>(DbConnection con, DbTransaction transaction, string tableName, List<T> dataList, object propertyMatchList = null, string[] propertyList = null, bool propertyContain = true, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class
+        {
+            DataTable dataTable = DataTableHelper.ToDataTable<T>(dataList, propertyMatchList, propertyList, propertyContain, reflectionType);
+            if (dataTable != null)
+            {
+                TransactionDataTableBatchImport(con, transaction, tableName, dataTable);
+            }
         }
         /// <summary>
         /// DataTable 数据批量导入
@@ -1090,6 +1110,32 @@ namespace Helper.Core.Library
             finally
             {
                 if (con != null) con.Close();
+            }
+        }
+        /// <summary>
+        /// DataTable 数据批量导入
+        /// </summary>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="tableName">数据库表名称</param>
+        /// <param name="dataTable">DataTable 数据</param>
+        public static void TransactionDataTableBatchImport(DbConnection con, DbTransaction transaction, string tableName, DataTable dataTable)
+        {
+            if (DataBaseType != DataBaseTypeEnum.Sql) throw new Exception(BatchImportException);
+            using (SqlBulkCopy sqlBulkCopy = new SqlBulkCopy((SqlConnection)con, SqlBulkCopyOptions.Default, (SqlTransaction)transaction))
+            {
+                sqlBulkCopy.DestinationTableName = tableName;
+
+                int columnCount = dataTable.Columns.Count;
+                DataColumn dataColumn = null;
+
+                for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                {
+                    dataColumn = dataTable.Columns[columnIndex];
+                    sqlBulkCopy.ColumnMappings.Add(dataColumn.ColumnName, dataColumn.ColumnName);
+                }
+
+                sqlBulkCopy.WriteToServer(dataTable);
             }
         }
         #endregion
