@@ -142,11 +142,12 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="xmlPath">Xml 文件地址，未设置则不保存</param>
         /// <param name="xPath">XPath 查询语句</param>
+        /// <param name="descendantXPath">XPath 子查询语句，如果设置则子查询，如果查询到子元素，则更新</param>
         /// <param name="dataList">实体数据列表</param>
         /// <param name="xmlDocument">XmlDocument</param>
         /// <param name="propertyList">属性列表</param>
         /// <param name="reflectionType">反射类型</param>
-        public static void SetValue<T>(string xmlPath, string xPath, List<T> dataList, XmlDocument xmlDocument, string[] propertyList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class
+        public static void SetValue<T>(string xmlPath, string xPath, string descendantXPath, List<T> dataList, XmlDocument xmlDocument, string[] propertyList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class
         {
             if (xmlDocument == null)
             {
@@ -160,8 +161,27 @@ namespace Helper.Core.Library
                     Dictionary<string, EntityToXmlMapper> propertyMapperDict = InitEntityToXmlMapper<T>(t, propertyGetDict, filterNameList);
                     if (propertyMapperDict != null)
                     {
-                        XmlElement xmlElement = CreateXmlElement<T>(propertyMapperDict, xmlDocument, elementName);
-                        if (xmlElement != null) xmlNode.AppendChild(xmlElement);
+                        if (string.IsNullOrEmpty(descendantXPath))
+                        {
+                            XmlElement xmlElement = CreateXmlElement<T>(propertyMapperDict, xmlDocument, elementName);
+                            if (xmlElement != null) xmlNode.AppendChild(xmlElement);
+                        }
+                        else
+                        {
+                            string itemXPath = descendantXPath;
+                            foreach (KeyValuePair<string, EntityToXmlMapper> keyValueItem in propertyMapperDict)
+                            {
+                                itemXPath = itemXPath.Replace("{" + keyValueItem.Key + "}", keyValueItem.Value.Value);
+                            }
+                            XmlNode nodeItem = xmlNode.SelectSingleNode("descendant::" + itemXPath);
+                            if (nodeItem != null)
+                            {
+                                foreach (KeyValuePair<string, EntityToXmlMapper> keyValueItem in propertyMapperDict)
+                                {
+                                    SetXmlNodeAttribute(nodeItem, keyValueItem.Key, keyValueItem.Value.Value, xmlDocument, keyValueItem.Value.ValueEnum);
+                                }
+                            }
+                        }
                     }
                 }
             }, xmlPath, xPath, xmlDocument, propertyList, reflectionType);
