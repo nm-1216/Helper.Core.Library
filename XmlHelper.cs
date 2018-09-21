@@ -181,6 +181,11 @@ namespace Helper.Core.Library
                                     SetXmlNodeAttribute(nodeItem, keyValueItem.Key, keyValueItem.Value.Value, xmlDocument, keyValueItem.Value.ValueEnum);
                                 }
                             }
+                            else
+                            {
+                                XmlElement xmlElement = CreateXmlElement<T>(propertyMapperDict, xmlDocument, elementName);
+                                if (xmlElement != null) xmlNode.AppendChild(xmlElement);
+                            }
                         }
                     }
                 }
