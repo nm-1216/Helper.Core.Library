@@ -19,11 +19,11 @@ namespace Helper.Core.Library
         /// <param name="path">保存路径</param>
         /// <param name="fileMaxSize">上传文件大小</param>
         /// <param name="suffixList">合法后缀列表，例：.rar</param>
-        /// <param name="serialEnumList">VerifyFormatSerialEnum</param>
+        /// <param name="serialTypeList">VerifyFormatSerialTypeEnum</param>
         /// <returns></returns>
-        public bool Upload(HttpPostedFileBase httpPostedFile, string path, int fileMaxSize, List<string> suffixList = null, params VerifyFormatSerialEnum[] serialEnumList)
+        public bool Upload(HttpPostedFileBase httpPostedFile, string path, int fileMaxSize, string[] suffixList = null, params int[] serialTypeList)
         {
-            if (this.Verify(httpPostedFile, fileMaxSize, suffixList, serialEnumList))
+            if (this.Verify(httpPostedFile, fileMaxSize, suffixList, serialTypeList))
             {
                 try
                 {
@@ -50,11 +50,11 @@ namespace Helper.Core.Library
         /// <param name="left">标志左间距，值小于 0 表示从右开始</param>
         /// <param name="top">标志上间距，值小于 0 表示从底开始</param>
         /// <param name="suffixList">合法后缀列表，例：.rar</param>
-        /// <param name="serialEnumList">VerifyFormatSerialEnum</param>
+        /// <param name="serialTypeList">VerifyFormatSerialTypeEnum</param>
         /// <returns></returns>
-        public bool Upload(HttpPostedFileBase httpPostedFile, string path, int width, int height, int fileMaxSize, string logoPath = "", int left = 0, int top = 0, List<string> suffixList = null, params VerifyFormatSerialEnum[] serialEnumList)
+        public bool Upload(HttpPostedFileBase httpPostedFile, string path, int width, int height, int fileMaxSize, string logoPath = "", int left = 0, int top = 0, string[] suffixList = null, params int[] serialTypeList)
         {
-            if (this.Verify(httpPostedFile, fileMaxSize, suffixList, serialEnumList))
+            if (this.Verify(httpPostedFile, fileMaxSize, suffixList, serialTypeList))
             {
                 Bitmap bitmap = new Bitmap(httpPostedFile.InputStream, true);
                 bitmap = this.CreateBitmap(bitmap, width, height, logoPath, left, top);
@@ -181,7 +181,7 @@ namespace Helper.Core.Library
                 if (graphics != null) graphics.Dispose();
             }
         }
-        private bool Verify(HttpPostedFileBase httpPostedFile, int maxSize, List<string> suffixList, params VerifyFormatSerialEnum[] serialEnumList)
+        private bool Verify(HttpPostedFileBase httpPostedFile, int maxSize, string[] suffixList, params int[] serialTypeList)
         {
             if (httpPostedFile.ContentLength > maxSize)
             {
@@ -194,7 +194,7 @@ namespace Helper.Core.Library
             }
             else
             {
-                return UploadVerifyHelper.Verify(httpPostedFile, suffixList, serialEnumList);
+                return UploadVerifyHelper.Verify(httpPostedFile, suffixList, serialTypeList);
             }
         }
         #endregion
