@@ -201,6 +201,7 @@
     <Compile Include="UploadHelper.cs" />
     <Compile Include="UploadVerifyHelper.cs" />
     <Compile Include="UriHelper.cs" />
+    <Compile Include="WordTemplateHelper.cs" />
     <Compile Include="XmlHelper.cs" />
     <Compile Include="XmlSerializerHelper.cs" />
     <Compile Include="ZipHelper.cs" />
