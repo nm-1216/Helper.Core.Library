@@ -849,7 +849,7 @@ namespace Helper.Core.Library
 
         public int ColumnIndex { get; set; }
     }
-    internal class ExcelMergeCell
+    public class ExcelMergeCell
     {
         public int BeginRow { get; set; }
         public int BeginColumn { get; set; }

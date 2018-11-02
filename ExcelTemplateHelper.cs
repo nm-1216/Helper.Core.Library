@@ -30,8 +30,9 @@ namespace Helper.Core.Library
         /// <param name="excelPath">Excel 路径</param>
         /// <param name="dataMatchList">数据匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
         /// <param name="dataList">数据列表</param>
+        /// <param name="mergeCellDataList">合并单元格数据列表</param>
         /// <param name="reflectionType">反射类型</param>
-        public static void ToExcel<T>(string templatePath, string templateSheetName, string excelPath, object dataMatchList, List<T> dataList, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class
+        public static void ToExcel<T>(string templatePath, string templateSheetName, string excelPath, object dataMatchList, List<T> dataList, List<ExcelMergeCell> mergeCellDataList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class
         {
             Dictionary<string, object> propertyDict = CommonHelper.GetParameterDict(dataMatchList);
 
@@ -119,6 +120,14 @@ namespace Helper.Core.Library
                 }
 
                 sheet.ForceFormulaRecalculation = true;
+
+                if (mergeCellDataList != null && mergeCellDataList.Count > 0)
+                {
+                    foreach (ExcelMergeCell cellItem in mergeCellDataList)
+                    {
+                        sheet.AddMergedRegion(new CellRangeAddress(insertRowIndex + cellItem.BeginRow, insertRowIndex + cellItem.EndRow, cellItem.BeginColumn, cellItem.EndColumn));
+                    }
+                }
 
                 if (System.IO.File.Exists(excelPath)) System.IO.File.Delete(excelPath);
                 using (fileStream = new FileStream(excelPath, FileMode.Create, FileAccess.ReadWrite))
