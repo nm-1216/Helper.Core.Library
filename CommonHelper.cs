@@ -235,6 +235,41 @@ namespace Helper.Core.Library
             }
             return parameterDict;
         }
+
+        internal static Dictionary<string, string> KeyValueTransform(object param)
+        {
+            Dictionary<string, object> dataDict = GetParameterDict(param);
+            Dictionary<string, string> resultDict = new Dictionary<string, string>();
+            foreach(KeyValuePair<string, object> keyValueItem in dataDict)
+            {
+                resultDict.Add(keyValueItem.Value.ToString(), keyValueItem.Key);
+            }
+            return resultDict;
+        }
+
+        internal static Dictionary<string, string> MergeDict(bool existsReplace = false, params Dictionary<string, string>[] dictList)
+        {
+            Dictionary<string, string> resultList = new Dictionary<string, string>();
+            for (int index = 0; index < dictList.Length; index++)
+            {
+                Dictionary<string, string> dictItem = dictList[index];
+                if (dictItem != null)
+                {
+                    foreach (KeyValuePair<string, string> item in dictItem)
+                    {
+                        if (!resultList.ContainsKey(item.Key))
+                        {
+                            resultList.Add(item.Key, item.Value);
+                        }
+                        else
+                        {
+                            if (existsReplace) resultList[item.Key] = item.Value;
+                        }
+                    }
+                }
+            }
+            return resultList;
+        }
     }
 
     #region Attribute 基类

@@ -30,6 +30,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Aspose.Cells, Version=7.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Debug\Aspose.Cells.dll</HintPath>
+    </Reference>
+    <Reference Include="Aspose.Words, Version=17.6.0.0, Culture=neutral, PublicKeyToken=716fcc553a201e56, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Debug\Aspose.Words.dll</HintPath>
+    </Reference>
     <Reference Include="Common.Logging, Version=3.3.1.0, Culture=neutral, PublicKeyToken=af08829b84f0328e, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>bin\Debug\Common.Logging.dll</HintPath>
@@ -145,6 +153,7 @@
     <Compile Include="EncryptHelper.cs" />
     <Compile Include="ExcelExpressionHelper.cs" />
     <Compile Include="ExcelExtendHelper.cs" />
+    <Compile Include="TExcelHelper.cs" />
     <Compile Include="ExcelHelper.cs" />
     <Compile Include="ExcelTemplateHelper.cs" />
     <Compile Include="ExcelToDataBaseHelper.cs" />

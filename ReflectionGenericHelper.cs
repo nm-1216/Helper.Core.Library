@@ -80,12 +80,19 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="t">实体类型数据</param>
         /// <returns></returns>
-        public static Dictionary<string, object> GetPropertyDict<T>(T t) where T : class
+        public static Dictionary<string, object> GetPropertyDict<T>(T t = null) where T : class
         {
             Dictionary<string, object> resultDict = new Dictionary<string, object>();
             Foreach<T>((PropertyInfo propertyInfo) =>
             {
-                resultDict.Add(propertyInfo.Name, propertyInfo.GetValue(t));
+                if (t != null)
+                {
+                    resultDict.Add(propertyInfo.Name, propertyInfo.GetValue(t));
+                }
+                else
+                {
+                    resultDict.Add(propertyInfo.Name, propertyInfo.Name);
+                }
             });
             return resultDict;
         }
