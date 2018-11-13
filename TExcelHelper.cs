@@ -117,6 +117,33 @@ namespace Helper.Core.Library
         }
         #endregion
 
+        #region ToTxt<T>
+        /// <summary>
+        /// 根据实体数据列表创建 Excel
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="dataList">实体数据列表</param>
+        /// <param name="excelPath">Excel 路径</param>
+        /// <param name="sheetName">Sheet 表单名称</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="propertyList">属性列表，如果指定，则按指定属性列表生成 Excel</param>
+        /// <param name="propertyContain">是否包含，true 属性包含，flase 属性排除</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static void ToExcel<T>(List<T> dataList, string excelPath, string sheetName, object propertyMatchList = null, string[] propertyList = null, bool propertyContain = true, object columnValueFormat = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            ExecuteIWorkbookWrite(excelPath, (Workbook workbook) =>
+            {
+                List<string> filterNameList = null;
+                if (propertyList != null) filterNameList = propertyList.ToList<string>();
+
+                Dictionary<string, object> propertyDict = CommonHelper.GetParameterDict(propertyMatchList);
+                Dictionary<string, object> valueFormatDict = CommonHelper.GetParameterDict(columnValueFormat);
+                ToSheet(workbook, dataList, sheetName, filterNameList, propertyContain, propertyDict, valueFormatDict, reflectionType);
+            });
+        }
+        #endregion
+
         #endregion
 
         #region 逻辑处理私有方法
@@ -200,6 +227,63 @@ namespace Helper.Core.Library
                 }
             }
             return null;
+        }
+        internal static void ToSheet<T>(Workbook workbook, List<T> dataList, string sheetName, List<string> filterNameList = null, bool propertyContain = true, Dictionary<string, object> propertyDict = null, Dictionary<string, object> valueFormatDict = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            Worksheet iSheet = workbook.Worksheets[0];
+            iSheet.Name = sheetName;
+            // 获得表头数据
+            Dictionary<string, PropertyInfo> headerColumnNameDict = CommonHelper.InitPropertyWriteMapperFormat<T, ExcelTAttribute>(propertyDict, filterNameList, propertyContain);
+            Cells cellList = iSheet.Cells;
+
+            int columnIndex = 0;
+            // 遍历设置表头
+            foreach (KeyValuePair<string, PropertyInfo> keyValuePair in headerColumnNameDict)
+            {
+                cellList[0, columnIndex].PutValue(keyValuePair.Key);
+                columnIndex++;
+            }
+
+            dynamic propertyGetDict = null;
+            if (reflectionType != ReflectionTypeEnum.Original) propertyGetDict = ReflectionExtendHelper.PropertyGetCallDict<T>(reflectionType);
+
+            if (dataList != null)
+            {
+                // 遍历设置数据
+                for (int rowIndex = 1; rowIndex <= dataList.Count; rowIndex++)
+                {
+                    SetRowDataValue(cellList, rowIndex, dataList[rowIndex - 1], propertyGetDict, headerColumnNameDict, valueFormatDict);
+                }
+            }
+        }
+        private static void SetRowDataValue<T>(Cells cellList, int rowIndex, T t, dynamic propertyGetDict, Dictionary<string, PropertyInfo> headerColumnNameDict, Dictionary<string, object> valueFormatDict) where T : class
+        {
+            Type type = typeof(T);
+
+            int columnIndex = 0;
+
+            object propertyValue = null;
+            foreach (KeyValuePair<string, PropertyInfo> keyValuePair in headerColumnNameDict)
+            {
+                if (propertyGetDict != null && propertyGetDict.ContainsKey(keyValuePair.Value.Name))
+                {
+                    propertyValue = propertyGetDict[keyValuePair.Value.Name](t);
+                }
+                else
+                {
+                    propertyValue = ReflectionHelper.GetPropertyValue(t, keyValuePair.Value);
+                }
+                if (propertyValue != null)
+                {
+                    if ((keyValuePair.Value.PropertyType == typeof(DateTime) || keyValuePair.Value.PropertyType == typeof(Nullable<DateTime>)) && valueFormatDict != null && valueFormatDict.ContainsKey(keyValuePair.Value.Name))
+                    {
+                        propertyValue = ((DateTime)propertyValue).ToString(valueFormatDict[keyValuePair.Value.Name].ToString());
+                    }
+
+                    cellList[rowIndex, columnIndex].PutValue(propertyValue);
+                }
+                columnIndex++;
+            }
         }
         #region ToEntity 相关
         private static Dictionary<int, TExcelToEntityColumnMapper> InitExcelToEntityMapper<T>(int headerIndex, Cells cellList, Dictionary<string, string> propertyDict = null) where T : class

@@ -36,3 +36,7 @@ E:\GitProject\Helper.Core.Library\obj\Debug\Interop.MSScriptControl.dll
 E:\GitProject\Helper.Core.Library\obj\Debug\Helper.Core.Library.csproj.ResolveComReference.cache
 E:\GitProject\Helper.Core.Library\obj\Debug\Helper.Core.Library.dll
 E:\GitProject\Helper.Core.Library\obj\Debug\Helper.Core.Library.pdb
+E:\GitProject\Helper.Core.Library\bin\Debug\Microsoft.Office.Interop.Word.dll
+E:\GitProject\Helper.Core.Library\bin\Debug\office.dll
+E:\GitProject\Helper.Core.Library\bin\Debug\Microsoft.Vbe.Interop.dll
+E:\GitProject\Helper.Core.Library\bin\Debug\Microsoft.Office.Interop.Excel.dll
