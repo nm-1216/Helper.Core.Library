@@ -139,7 +139,7 @@ namespace Helper.Core.Library
             }
             if (!string.IsNullOrEmpty(html))
             {
-                html = System.Text.RegularExpressions.Regex.Replace(html, @"<meta[^>]*>", "<meta http-equiv=Content-Type content='text/html; charset=gb2312'>", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                html = System.Text.RegularExpressions.Regex.Replace(html, @"<meta[^>]*>", "<meta http-equiv=Content-Type content='text/html; charset=utf-8'>", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 if (replaceTextList != null && replaceTextList.Length > 0)
                 {
                     foreach(string replaceText in replaceTextList)
@@ -147,7 +147,7 @@ namespace Helper.Core.Library
                         html = html.Replace(replaceText, "");
                     }
                 }
-                using(System.IO.StreamWriter streamWriter = new System.IO.StreamWriter(htmlPath, false, Encoding.Default))
+                using(System.IO.StreamWriter streamWriter = new System.IO.StreamWriter(htmlPath, false, Encoding.UTF8))
                 {
                     streamWriter.Write(html);
                 }

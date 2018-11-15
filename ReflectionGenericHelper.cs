@@ -96,6 +96,17 @@ namespace Helper.Core.Library
             });
             return resultDict;
         }
+        public static List<string> GetPropertyNameList<T>() where T : class
+        {
+            Type type = typeof(T);
+            PropertyInfo[] propertyInfoList = type.GetProperties();
+            List<string> resultList = new List<string>();
+            foreach(PropertyInfo propertyInfo in propertyInfoList)
+            {
+                resultList.Add(propertyInfo.Name);
+            }
+            return resultList;
+        }
         #endregion
 
         #region 表达式或 Emit 反射获取设置属性值（泛型）

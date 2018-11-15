@@ -64,41 +64,51 @@ namespace Helper.Core.Library
             where T : class
             where K : BaseReadAndWriteTAttribute
         {
-            Dictionary<string, PropertyInfo> resultDict = new Dictionary<string, PropertyInfo>();
-            ReflectionGenericHelper.Foreach<T>((PropertyInfo propertyInfo) =>
+            if (filterNameList == null)
             {
-                if (filterNameList == null || (filterPropertyContain && filterNameList.IndexOf(propertyInfo.Name) >= 0) || (!filterPropertyContain && filterNameList.IndexOf(propertyInfo.Name) < 0))
+                filterNameList = ReflectionGenericHelper.GetPropertyNameList<T>();
+            }
+            else
+            {
+                if (!filterPropertyContain)
                 {
-                    string attributeName = null;
-                    if (propertyDict != null && propertyDict.ContainsKey(propertyInfo.Name))
+                    filterNameList = ReflectionGenericHelper.GetPropertyNameList<T>().Except<string>(filterNameList).ToList();
+                }
+            }
+            Type type = typeof(T);
+            Dictionary<string, PropertyInfo> resultDict = new Dictionary<string, PropertyInfo>();
+            foreach (string propertyName in filterNameList)
+            {
+                PropertyInfo propertyInfo = type.GetProperty(propertyName);
+                string attributeName = null;
+                if (propertyDict != null && propertyDict.ContainsKey(propertyInfo.Name))
+                {
+                    attributeName = propertyDict[propertyInfo.Name].ToString();
+                }
+                else
+                {
+                    K k = propertyInfo.GetCustomAttribute<K>();
+                    if (k != null)
                     {
-                        attributeName = propertyDict[propertyInfo.Name].ToString();
+                        if (k.Type == AttributeReadAndWriteTypeEnum.ReadAndWrite || k.Type == AttributeReadAndWriteTypeEnum.Write)
+                        {
+                            if (!string.IsNullOrEmpty(k.Name))
+                            {
+                                attributeName = k.Name;
+                            }
+                            else
+                            {
+                                attributeName = propertyInfo.Name;
+                            }
+                        }
                     }
                     else
                     {
-                        K k = propertyInfo.GetCustomAttribute<K>();
-                        if (k != null)
-                        {
-                            if (k.Type == AttributeReadAndWriteTypeEnum.ReadAndWrite || k.Type == AttributeReadAndWriteTypeEnum.Write)
-                            {
-                                if (!string.IsNullOrEmpty(k.Name))
-                                {
-                                    attributeName = k.Name;
-                                }
-                                else
-                                {
-                                    attributeName = propertyInfo.Name;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            attributeName = propertyInfo.Name;
-                        }
+                        attributeName = propertyInfo.Name;
                     }
-                    if (!string.IsNullOrEmpty(attributeName)) resultDict.Add(attributeName, propertyInfo);
                 }
-            });
+                if (!string.IsNullOrEmpty(attributeName)) resultDict.Add(attributeName, propertyInfo);
+            }
             return resultDict;
         }
 
