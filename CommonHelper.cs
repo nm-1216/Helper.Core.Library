@@ -80,34 +80,37 @@ namespace Helper.Core.Library
             foreach (string propertyName in filterNameList)
             {
                 PropertyInfo propertyInfo = type.GetProperty(propertyName);
-                string attributeName = null;
-                if (propertyDict != null && propertyDict.ContainsKey(propertyInfo.Name))
+                if (propertyInfo != null)
                 {
-                    attributeName = propertyDict[propertyInfo.Name].ToString();
-                }
-                else
-                {
-                    K k = propertyInfo.GetCustomAttribute<K>();
-                    if (k != null)
+                    string attributeName = null;
+                    if (propertyDict != null && propertyDict.ContainsKey(propertyInfo.Name))
                     {
-                        if (k.Type == AttributeReadAndWriteTypeEnum.ReadAndWrite || k.Type == AttributeReadAndWriteTypeEnum.Write)
-                        {
-                            if (!string.IsNullOrEmpty(k.Name))
-                            {
-                                attributeName = k.Name;
-                            }
-                            else
-                            {
-                                attributeName = propertyInfo.Name;
-                            }
-                        }
+                        attributeName = propertyDict[propertyInfo.Name].ToString();
                     }
                     else
                     {
-                        attributeName = propertyInfo.Name;
+                        K k = propertyInfo.GetCustomAttribute<K>();
+                        if (k != null)
+                        {
+                            if (k.Type == AttributeReadAndWriteTypeEnum.ReadAndWrite || k.Type == AttributeReadAndWriteTypeEnum.Write)
+                            {
+                                if (!string.IsNullOrEmpty(k.Name))
+                                {
+                                    attributeName = k.Name;
+                                }
+                                else
+                                {
+                                    attributeName = propertyInfo.Name;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            attributeName = propertyInfo.Name;
+                        }
                     }
+                    if (!string.IsNullOrEmpty(attributeName)) resultDict.Add(attributeName, propertyInfo);
                 }
-                if (!string.IsNullOrEmpty(attributeName)) resultDict.Add(attributeName, propertyInfo);
             }
             return resultDict;
         }
