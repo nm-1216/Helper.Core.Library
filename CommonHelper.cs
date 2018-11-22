@@ -22,10 +22,15 @@ namespace Helper.Core.Library
             where T : class
             where K : BaseReadAndWriteTAttribute
         {
+            Type type = typeof(T);
+
+            filterNameList = GetFilterNameList<T>(filterNameList, filterPropertyContain);
+
             Dictionary<string, string> resultDict = new Dictionary<string, string>();
-            ReflectionGenericHelper.Foreach<T>((PropertyInfo propertyInfo) =>
+            foreach (string propertyName in filterNameList)
             {
-                if (filterNameList == null || (filterPropertyContain && filterNameList.IndexOf(propertyInfo.Name) >= 0) || (!filterPropertyContain && filterNameList.IndexOf(propertyInfo.Name) < 0))
+                PropertyInfo propertyInfo = type.GetProperty(propertyName);
+                if (propertyInfo != null)
                 {
                     string attributeName = null;
                     if (propertyDict != null && propertyDict.ContainsKey(propertyInfo.Name))
@@ -56,7 +61,11 @@ namespace Helper.Core.Library
                     }
                     if (!string.IsNullOrEmpty(attributeName)) resultDict.Add(attributeName, propertyInfo.Name);
                 }
-            });
+                else
+                {
+                    resultDict.Add(propertyName, propertyName);
+                }
+            }
             return resultDict;
         }
 
@@ -64,18 +73,10 @@ namespace Helper.Core.Library
             where T : class
             where K : BaseReadAndWriteTAttribute
         {
-            if (filterNameList == null)
-            {
-                filterNameList = ReflectionGenericHelper.GetPropertyNameList<T>();
-            }
-            else
-            {
-                if (!filterPropertyContain)
-                {
-                    filterNameList = ReflectionGenericHelper.GetPropertyNameList<T>().Except<string>(filterNameList).ToList();
-                }
-            }
             Type type = typeof(T);
+
+            filterNameList = GetFilterNameList<T>(filterNameList, filterPropertyContain);
+
             Dictionary<string, PropertyInfo> resultDict = new Dictionary<string, PropertyInfo>();
             foreach (string propertyName in filterNameList)
             {
@@ -152,6 +153,22 @@ namespace Helper.Core.Library
                 if (mapperName != null && callback(mapperName)) resultDict.Add(propertyInfo, mapperName);
             });
             return resultDict;
+        }
+
+        internal static List<string> GetFilterNameList<T>(List<string> filterNameList, bool filterPropertyContain) where T : class
+        {
+            if (filterNameList == null)
+            {
+                filterNameList = ReflectionGenericHelper.GetPropertyNameList<T>();
+            }
+            else
+            {
+                if (!filterPropertyContain)
+                {
+                    filterNameList = ReflectionGenericHelper.GetPropertyNameList<T>().Except<string>(filterNameList).ToList();
+                }
+            }
+            return filterNameList;
         }
 
         internal static Dictionary<string, object> GetExpressionDict<T>(Expression<Func<T, object>> expression) where T : class
