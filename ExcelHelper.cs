@@ -596,9 +596,24 @@ namespace Helper.Core.Library
                     {
                         cellText = iCell.StringCellValue;
                     }
+                    else if (iCell.CellType == CellType.Numeric && DateUtil.IsCellDateFormatted(iCell))
+                    {
+                        cellText = iCell.DateCellValue.ToString();
+                    }
                     else
                     {
-                        cellText = iCell.ToString();
+                        if (iCell.CellType == CellType.Numeric)
+                        {
+                            cellText = iCell.NumericCellValue.ToString();
+                            if(cellText.Contains("E"))
+                            {
+                                cellText = Convert.ToDecimal(Decimal.Parse(cellText, System.Globalization.NumberStyles.Float)).ToString();
+                            }
+                        }
+                        else
+                        {
+                            cellText = iCell.ToString();
+                        }
                     }
                 }
             }

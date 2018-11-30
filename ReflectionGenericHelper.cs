@@ -495,7 +495,17 @@ namespace Helper.Core.Library
                 }
                 else if (propertyInfo.PropertyType == typeof(float))
                 {
-                    call(t, float.Parse(dataValue));
+                    if (!string.IsNullOrEmpty(dataValue))
+                    {
+                        call(t, float.Parse(dataValue));
+                    }
+                }
+                else if (propertyInfo.PropertyType == typeof(double))
+                {
+                    if (!string.IsNullOrEmpty(dataValue))
+                    {
+                        call(t, double.Parse(dataValue));
+                    }
                 }
                 else if (propertyInfo.PropertyType == typeof(DateTime))
                 {
