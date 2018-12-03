@@ -297,6 +297,7 @@ namespace Helper.Core.Library
         /// <param name="cellCallback">单元格写入之后调用</param>
         /// <param name="sheetCallback">表单数据写入之后调用</param>
         /// <param name="isHeader">是否创建表头</param>
+        /// <param name="columnValueFormat">列格式化，例：yyyy年MM月dd日</param>
         /// <param name="reflectionType">反射类型</param>
         /// <returns></returns>
         public static bool ToExcel<T>(List<T> dataList, string excelPath, string sheetName, object propertyMatchList = null, string[] propertyList = null, bool propertyContain = true, Action<ICell, object> cellCallback = null, Action<ISheet, List<string>> sheetCallback = null, bool isHeader = true, object columnValueFormat = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()

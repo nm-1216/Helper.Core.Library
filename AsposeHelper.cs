@@ -9,6 +9,13 @@ namespace Helper.Core.Library
 {
     public class AsposeHelper
     {
+        #region 对外公开方法
+        /// <summary>
+        /// Excel 生成 HTML 文件
+        /// </summary>
+        /// <param name="excelPath">Excel 路径</param>
+        /// <param name="htmlPath">Html 路径</param>
+        /// <param name="sheetName">表单名称</param>
         public static void ExcelToHtmlFile(string excelPath, string htmlPath, string sheetName = "")
         {
             Aspose.Cells.HtmlSaveOptions htmlSaveOptions = new Aspose.Cells.HtmlSaveOptions(Aspose.Cells.SaveFormat.Html);
@@ -33,6 +40,9 @@ namespace Helper.Core.Library
             }
             TransformHTMLEncoding(htmlPath, string.Format("<frame src=\"{0}_files/tabstrip.htm\" name=\"frTabs\" marginwidth=\"0\" marginheight=\"0\">", Path.GetFileNameWithoutExtension(htmlPath)));
         }
+        #endregion
+
+        #region 逻辑处理私有函数
         private static void TransformHTMLEncoding(string htmlPath, params string[] replaceTextList)
         {
             string html = "";
@@ -57,5 +67,6 @@ namespace Helper.Core.Library
                 }
             }
         }
+        #endregion
     }
 }

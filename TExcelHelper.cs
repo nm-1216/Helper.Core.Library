@@ -14,7 +14,7 @@ namespace Helper.Core.Library
 {
     public class TExcelHelper
     {
-        public static readonly ExcelHelper Instance = new ExcelHelper();
+        public static readonly TExcelHelper Instance = new TExcelHelper();
 
         #region 私有属性常量
         private const string ExcelFormatErrorException = "Excel 文件格式不正确！";
@@ -128,6 +128,7 @@ namespace Helper.Core.Library
         /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
         /// <param name="propertyList">属性列表，如果指定，则按指定属性列表生成 Excel</param>
         /// <param name="propertyContain">是否包含，true 属性包含，flase 属性排除</param>
+        /// <param name="columnValueFormat">列格式化，例：yyyy年MM月dd日</param>
         /// <param name="reflectionType">反射类型</param>
         /// <returns></returns>
         public static void ToExcel<T>(List<T> dataList, string excelPath, string sheetName, object propertyMatchList = null, string[] propertyList = null, bool propertyContain = true, object columnValueFormat = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
@@ -321,10 +322,12 @@ namespace Helper.Core.Library
         #endregion
     }
 
+    #region 逻辑处理辅助类
     internal class TExcelToEntityColumnMapper
     {
         public string ColumnName { get; set; }
         public string ColumnPropertyName { get; set; }
         public PropertyInfo ColumnPropertyInfo { get; set; }
     }
+    #endregion
 }
