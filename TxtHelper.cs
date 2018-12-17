@@ -212,10 +212,20 @@ namespace Helper.Core.Library
             {
                 string content = streamReader.ReadToEnd();
                 string[] contentList = content.Split(new string[] { lineSplitChar }, StringSplitOptions.None);
-                foreach(string contentItem in contentList)
+                if (splitChar == lineSplitChar)
                 {
-                    string[] itemList = contentItem.Split(new string[] { splitChar }, StringSplitOptions.None);
-                    dataList.Add((T)Convert.ChangeType(itemList[fieldIndex], typeof(T)));
+                    foreach (string contentItem in contentList)
+                    {
+                        dataList.Add((T)Convert.ChangeType(contentItem, typeof(T)));
+                    }
+                }
+                else
+                {
+                    foreach (string contentItem in contentList)
+                    {
+                        string[] itemList = contentItem.Split(new string[] { splitChar }, StringSplitOptions.None);
+                        dataList.Add((T)Convert.ChangeType(itemList[fieldIndex], typeof(T)));
+                    }
                 }
             });
             return dataList;
@@ -347,7 +357,7 @@ namespace Helper.Core.Library
             string[] dataList = text.Split(new string[] { splitChar }, StringSplitOptions.None);
 
             T t = ReflectionGenericHelper.New<T>();
-            foreach(var keyValueItem in propertyNameDict)
+            foreach (var keyValueItem in propertyNameDict)
             {
                 if (keyValueItem.Value >= 0 && keyValueItem.Value < dataList.Length)
                 {

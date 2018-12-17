@@ -70,6 +70,19 @@ namespace Helper.Core.Library
             }
             return false;
         }
+
+        public void Process(string imagePath, string path, int width, int height, int fileMaxSize, string logoPath = "", int left = 0, int top = 0, string[] suffixList = null, params int[] serialTypeList)
+        {
+            Bitmap bitmap = new Bitmap(imagePath);
+            bitmap = this.CreateBitmap(bitmap, width, height, logoPath, left, top);
+
+            if (bitmap != null)
+            {
+                if (File.Exists(path)) File.Delete(path);
+                bitmap.Save(path);
+                bitmap.Dispose();
+            }
+        }
         #endregion
 
         #region 逻辑处理私有方法
