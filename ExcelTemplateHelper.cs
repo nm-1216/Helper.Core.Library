@@ -218,9 +218,9 @@ namespace Helper.Core.Library
                                 {
                                     dataCell.SetCellValue(int.Parse(propertyValue.ToString()));
                                 }
-                                else if (propertyType == typeof(float))
+                                else if (propertyType == typeof(float) || propertyType == typeof(double))
                                 {
-                                    dataCell.SetCellValue(float.Parse(propertyValue.ToString()));
+                                    dataCell.SetCellValue(double.Parse(propertyValue.ToString()));
                                 }
                                 else if (propertyType == typeof(DateTime))
                                 {
