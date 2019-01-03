@@ -42,7 +42,7 @@ namespace Helper.Core.Library
             {
                 using (fileStream = new FileStream(templatePath, FileMode.Open, FileAccess.ReadWrite))
                 {
-                    workbook = ExcelHelper.ExecuteIWorkBookGet(templatePath, fileStream);
+                    workbook = ExcelHelper.ExecuteIWorkBookGet(fileStream);
                     if (workbook == null) throw new Exception(ExcelHelper.ExcelWorkbookNullException);
                 }
 
