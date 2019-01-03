@@ -12,6 +12,7 @@ using NPOI.XSSF.UserModel;
 using System.Data;
 using System.Text.RegularExpressions;
 using NPOI.SS.Util;
+using System.Web;
 
 namespace Helper.Core.Library
 {
@@ -68,6 +69,28 @@ namespace Helper.Core.Library
         {
             List<T> dataList = new List<T>();
             ExecuteIWorkbookRead(excelPath, (IWorkbook workbook) =>
+            {
+                Dictionary<string, object> propertyDict = CommonHelper.GetParameterDict(propertyMatchList);
+                dataList = SheetEntityList<T>(workbook, sheetName, propertyDict, headerIndex, dataIndex, primaryKey, reflectionType);
+            });
+            return dataList;
+        }
+        /// <summary>
+        /// 返回实体数据列表
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="file">HttpPostedFileBase</param>
+        /// <param name="sheetName">Sheet 表单名称</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="headerIndex">表头起始索引，默认值：0，表示第一行是表头数据，与 dataIndex 相同时，表示 Excel 无表头</param>
+        /// <param name="dataIndex">数据行起始索引，默认值：1，表示数据从第二行开始</param>
+        /// <param name="primaryKey">主键标识，如果未指定，则表示第一列是主键</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static List<T> ToEntityList<T>(HttpPostedFileBase file, string sheetName, object propertyMatchList = null, int headerIndex = 0, int dataIndex = 1, string primaryKey = "", ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            List<T> dataList = new List<T>();
+            ExecuteIWorkbookRead(file.FileName, file.InputStream, (IWorkbook workbook) =>
             {
                 Dictionary<string, object> propertyDict = CommonHelper.GetParameterDict(propertyMatchList);
                 dataList = SheetEntityList<T>(workbook, sheetName, propertyDict, headerIndex, dataIndex, primaryKey, reflectionType);
@@ -424,6 +447,28 @@ namespace Helper.Core.Library
                 if (workbook != null) workbook.Close();
             }
         }
+        internal static void ExecuteIWorkbookRead(string excelPath, Stream stream, Action<IWorkbook> callback)
+        {
+            IWorkbook workbook = null;
+            try
+            {
+                workbook = ExecuteIWorkBookGet(excelPath, stream);
+                if (workbook == null)
+                {
+                    throw new Exception(ExcelWorkbookNullException);
+                }
+                if (callback != null) callback(workbook);
+                workbook.Close();
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                if (workbook != null) workbook.Close();
+            }
+        }
         internal static bool ExecuteIWorkbookWrite(string excelPath, Action<IWorkbook> callback)
         {
             FileStream fileStream = null;
@@ -465,7 +510,7 @@ namespace Helper.Core.Library
                 if (workbook != null) workbook.Close();
             }
         }
-        internal static IWorkbook ExecuteIWorkBookGet(string excelPath, FileStream fileStream)
+        internal static IWorkbook ExecuteIWorkBookGet(string excelPath, Stream fileStream)
         {
             string suffix = FileHelper.GetSuffix(excelPath);
             IWorkbook workbook = null;
