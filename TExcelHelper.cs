@@ -151,7 +151,7 @@ namespace Helper.Core.Library
         internal static void ExecuteIWorkbookRead(string excelPath, Action<Workbook> callback)
         {
             string suffix = FileHelper.GetSuffix(excelPath);
-            if (ExcelFormat.FormatList.IndexOf(suffix) < 0) throw new Exception(ExcelFormatErrorException);
+            if (ExcelFormatType.FormatList.IndexOf(suffix) < 0) throw new Exception(ExcelFormatErrorException);
 
             Workbook workbook = new Workbook(excelPath);
             if (callback != null) callback(workbook);
@@ -160,7 +160,7 @@ namespace Helper.Core.Library
         {
             //获得 Excel 后缀
             string suffix = FileHelper.GetSuffix(excelPath);
-            if (ExcelFormat.FormatList.IndexOf(suffix) < 0) throw new Exception(ExcelFormatErrorException);
+            if (ExcelFormatType.FormatList.IndexOf(suffix) < 0) throw new Exception(ExcelFormatErrorException);
 
             // 创建对应目录
             bool createDirectoryStatus = FileHelper.CreateDirectory(excelPath);

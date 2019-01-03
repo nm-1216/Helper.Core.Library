@@ -17,7 +17,7 @@ using System.Web;
 namespace Helper.Core.Library
 {
     #region 逻辑处理辅助枚举
-    internal class ExcelFormat
+    internal class ExcelFormatType
     {
         public const string XLSX = ".xlsx";
         public const string XLS = ".xls";
@@ -38,6 +38,11 @@ namespace Helper.Core.Library
                 return formatList;
             }
         }
+    }
+    public enum ExcelVersionType
+    {
+        Office2003,
+        Office2007
     }
     #endregion
 
@@ -327,14 +332,32 @@ namespace Helper.Core.Library
         {
             bool result = ExecuteIWorkbookWrite(excelPath, (IWorkbook workbook) =>
             {
-                List<string> filterNameList = null;
-                if (propertyList != null) filterNameList = propertyList.ToList<string>();
-
-                Dictionary<string, object> propertyDict = CommonHelper.GetParameterDict(propertyMatchList);
-                Dictionary<string, object> valueFormatDict = CommonHelper.GetParameterDict(columnValueFormat);
-                ToSheet(workbook, dataList, sheetName, cellCallback, sheetCallback, isHeader, filterNameList, propertyContain, propertyDict, valueFormatDict, reflectionType);
+                SetWorkbookData(workbook, dataList, sheetName, propertyMatchList, propertyList, propertyContain, cellCallback, sheetCallback, isHeader, columnValueFormat, reflectionType);
             });
             return result;
+        }
+        /// <summary>
+        /// 根据实体数据列表输出 Excel 流
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="dataList">实体数据列表</param>
+        /// <param name="sheetName">Sheet 表单名称</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="propertyList">属性列表，如果指定，则按指定属性列表生成 Excel</param>
+        /// <param name="propertyContain">是否包含，true 属性包含，flase 属性排除</param>
+        /// <param name="cellCallback">单元格写入之后调用</param>
+        /// <param name="sheetCallback">表单数据写入之后调用</param>
+        /// <param name="isHeader">是否创建表头</param>
+        /// <param name="columnValueFormat">列格式化，例：yyyy年MM月dd日</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static MemoryStream ToStream<T>(List<T> dataList, string sheetName, object propertyMatchList = null, string[] propertyList = null, bool propertyContain = true, Action<ICell, object> cellCallback = null, Action<ISheet, List<string>> sheetCallback = null, bool isHeader = true, object columnValueFormat = null, ExcelVersionType versionType = ExcelVersionType.Office2007, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            MemoryStream memoryStream = ExecuteIWorkbookStream(versionType, (IWorkbook workbook) =>
+            {
+                SetWorkbookData(workbook, dataList, sheetName, propertyMatchList, propertyList, propertyContain, cellCallback, sheetCallback, isHeader, columnValueFormat, reflectionType);
+            });
+            return memoryStream;
         }
         /// <summary>
         /// 根据 DataTable 数据创建 Excel
@@ -474,7 +497,7 @@ namespace Helper.Core.Library
             {
                 //获得 Excel 后缀
                 string suffix = FileHelper.GetSuffix(excelPath);
-                if (ExcelFormat.FormatList.IndexOf(suffix) < 0) throw new Exception(ExcelFormatErrorException);
+                if (ExcelFormatType.FormatList.IndexOf(suffix) < 0) throw new Exception(ExcelFormatErrorException);
 
                 // 创建对应目录
                 bool createDirectoryStatus = FileHelper.CreateDirectory(excelPath);
@@ -507,9 +530,51 @@ namespace Helper.Core.Library
                 if (workbook != null) workbook.Close();
             }
         }
+        internal static MemoryStream ExecuteIWorkbookStream(ExcelVersionType versionType, Action<IWorkbook> callback)
+        {
+            IWorkbook workbook = null;
+            try
+            {
+                // 创建 Excel
+                using (NPOIMemoryStream memoryStream = new NPOIMemoryStream())
+                {
+                    workbook = ExecuteIWorkBookGet(versionType);
+                    if (workbook == null) throw new Exception(ExcelWorkbookNullException);
+
+                    callback(workbook);
+
+                    workbook.Write(memoryStream);
+                    memoryStream.Flush();
+                    memoryStream.Position = 0;
+
+                    return memoryStream;
+                }
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                if (workbook != null) workbook.Close();
+            }
+        }
         internal static IWorkbook ExecuteIWorkBookGet(Stream fileStream)
         {
             return WorkbookFactory.Create(fileStream);
+        }
+        internal static IWorkbook ExecuteIWorkBookGet(ExcelVersionType versionType)
+        {
+            IWorkbook workbook = null;
+            if(versionType == ExcelVersionType.Office2003)
+            {
+                workbook = new HSSFWorkbook();
+            }
+            else
+            {
+                workbook = new XSSFWorkbook();
+            }
+            return workbook;
         }
         internal static List<T> SheetEntityList<T>(IWorkbook workbook, string sheetName, Dictionary<string, object> propertyDict = null, int headerIndex = 0, int dataIndex = 1, string primaryKey = "", ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
         {
@@ -783,6 +848,15 @@ namespace Helper.Core.Library
         #endregion
 
         #region ToExcel 相关
+        private static void SetWorkbookData<T>(IWorkbook workbook, List<T> dataList, string sheetName, object propertyMatchList = null, string[] propertyList = null, bool propertyContain = true, Action<ICell, object> cellCallback = null, Action<ISheet, List<string>> sheetCallback = null, bool isHeader = true, object columnValueFormat = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            List<string> filterNameList = null;
+            if (propertyList != null) filterNameList = propertyList.ToList<string>();
+
+            Dictionary<string, object> propertyDict = CommonHelper.GetParameterDict(propertyMatchList);
+            Dictionary<string, object> valueFormatDict = CommonHelper.GetParameterDict(columnValueFormat);
+            ToSheet(workbook, dataList, sheetName, cellCallback, sheetCallback, isHeader, filterNameList, propertyContain, propertyDict, valueFormatDict, reflectionType);
+        }
         private static void SetRowDataValue<T>(IRow row, Action<ICell, object> cellCallback, T t, dynamic propertyGetDict, Dictionary<string, PropertyInfo> headerColumnNameDict, Dictionary<string, object> valueFormatDict) where T : class
         {
             Type type = typeof(T);
@@ -892,6 +966,31 @@ namespace Helper.Core.Library
         public int EndColumn { get; set; }
 
         public string CellText { get; set; }
+    }
+    internal class NPOIMemoryStream : MemoryStream
+    {
+        /// <summary>
+        /// 获取流是否关闭
+        /// </summary>
+        public bool IsColse
+        {
+            get;
+            private set;
+        }
+
+        public NPOIMemoryStream(bool isColse = false)
+        {
+            this.IsColse = isColse;
+        }
+
+        public override void Close()
+        {
+            if (this.IsColse)
+            {
+                base.Close();
+            }
+
+        }
     }
     #endregion
 }
