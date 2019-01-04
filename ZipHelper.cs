@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：通过 SharpZipLib 实现文件/目录压缩/解压缩。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using ICSharpCode.SharpZipLib.Zip;
 using System;

@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：利用 Smtp 发送邮件。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System.Collections.Generic;
 using System.Linq;

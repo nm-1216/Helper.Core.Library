@@ -6,6 +6,8 @@
  * 以 i 后缀：行数，会根据行索引进行替换
  * 以 _dataBegin 后缀：数据行开始，计算过程中会替换
  * 以 _dataEnd 后缀：数据行结束，计算过程中会替换
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;

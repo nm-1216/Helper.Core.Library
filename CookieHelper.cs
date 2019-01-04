@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：读取/设置 Cookie 数据。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.Collections.Generic;

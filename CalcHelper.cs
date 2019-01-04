@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：利用 MSScriptControl 组件实现公式计算，添加引用之后，右键【属性】并设置嵌入互操作类型为 False。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using Helper.Core.Library;
 using System;

@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：通过 Lambda 表达式生成增/删/改/查 SQL 语句。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using Helper.Core.Library.QueryHelper;
 using System;

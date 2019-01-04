@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：通过 Stopwatch 检测程序性能。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.Diagnostics;

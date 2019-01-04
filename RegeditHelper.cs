@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：设置/获取注册表数据。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using Microsoft.Win32;
 using System;

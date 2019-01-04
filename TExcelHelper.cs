@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：利用 Aspose 读取/写入 Excel 文档，支持读取合并单元格以及带有公式的数据。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.IO;

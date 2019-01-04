@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：通过 Socket 实现客户端/服务端通信。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.Collections.Generic;

@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：DataTable 与实体数据列表相互转换，是对 DataTableHelper 的扩展，参数使用表达式，目的是减少属性名的拼写错误。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.Collections.Generic;

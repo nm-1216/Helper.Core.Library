@@ -1,6 +1,8 @@
 ﻿/*
  * 作用：通过 ZXing.Net 实现二维码/条形码创建/识别，支持生成不带空白边框的二维码。
  * ZXing 下载地址：http://zxingnet.codeplex.com/
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.Collections.Generic;

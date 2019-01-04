@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：DataTable 与实体数据列表相互转换。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.Collections.Generic;

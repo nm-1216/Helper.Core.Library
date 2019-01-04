@@ -4,6 +4,8 @@
  * ErLang 下载地址：http://www.erlang.org/downloads
  * RabbitMQ 下载地址：http://www.rabbitmq.com/
  * RabbitMQ Client 下载地址：http://www.rabbitmq.com/dotnet.html
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;

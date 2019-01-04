@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：日期操作，对 TimeSpan 进行格式化输出。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 

@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：分页显示，显示格式为：数据总数 页总数 首页/前一页 N页 后一页/尾页。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.Text;

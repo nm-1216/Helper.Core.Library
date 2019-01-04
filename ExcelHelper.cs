@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：利用 NPOI 读取/写入 Excel 文档，支持读取合并单元格以及带有公式的数据。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.IO;
@@ -321,7 +323,7 @@ namespace Helper.Core.Library
         /// <param name="sheetName">Sheet 表单名称</param>
         /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
         /// <param name="propertyList">属性列表，如果指定，则按指定属性列表生成 Excel</param>
-        /// <param name="propertyContain">是否包含，true 属性包含，flase 属性排除</param>
+        /// <param name="propertyContain">是否包含，true 属性包含，false 属性排除</param>
         /// <param name="cellCallback">单元格写入之后调用</param>
         /// <param name="sheetCallback">表单数据写入之后调用</param>
         /// <param name="isHeader">是否创建表头</param>
@@ -344,7 +346,7 @@ namespace Helper.Core.Library
         /// <param name="sheetName">Sheet 表单名称</param>
         /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
         /// <param name="propertyList">属性列表，如果指定，则按指定属性列表生成 Excel</param>
-        /// <param name="propertyContain">是否包含，true 属性包含，flase 属性排除</param>
+        /// <param name="propertyContain">是否包含，true 属性包含，false 属性排除</param>
         /// <param name="cellCallback">单元格写入之后调用</param>
         /// <param name="sheetCallback">表单数据写入之后调用</param>
         /// <param name="isHeader">是否创建表头</param>

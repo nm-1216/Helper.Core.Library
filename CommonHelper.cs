@@ -1,4 +1,8 @@
-﻿using System;
+﻿/*
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
+ */ 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;

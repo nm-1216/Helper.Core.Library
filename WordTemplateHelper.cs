@@ -1,4 +1,10 @@
-﻿using NPOI.XWPF.UserModel;
+﻿/*
+ * 利用 NOPI 按模版生成 WORD 文档，以 {data} 格式匹配数据
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
+ */
+
+using NPOI.XWPF.UserModel;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -1,4 +1,8 @@
-﻿using System.IO;
+﻿/*
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
+ */
+using System.IO;
 
 namespace Helper.Core.Library
 {

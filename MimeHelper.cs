@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：根据文件名获取这个文件对应的 Mime 类型。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System.Collections.Generic;
 

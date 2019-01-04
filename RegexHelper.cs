@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：常用正则表达式验证。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System.Text.RegularExpressions;
 

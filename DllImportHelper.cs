@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：调用外部/系统 DLL，判断文档是否处于打开状态，读取/写入 Ini 数据。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.Runtime.InteropServices;

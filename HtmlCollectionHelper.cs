@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：通过 HtmlAgilityPack 和 XPath 实现页面数据采集。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using DotNet.Utilities;
 using HtmlAgilityPack;

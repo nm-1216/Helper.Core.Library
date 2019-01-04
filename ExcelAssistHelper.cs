@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：利用 NPOI 读取 Excel 指定单元格数据。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using NPOI.SS.UserModel;
 using System;

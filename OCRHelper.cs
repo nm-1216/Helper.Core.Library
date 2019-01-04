@@ -2,6 +2,8 @@
  * 作用：通过 Tesseract 实现图片文字识别。
  * Tesseract 下载地址：https://www.nuget.org/packages/Tesseract/
  * 语言包地址：https://github.com/tesseract-ocr/langdata
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System.Drawing;
 using Tesseract;

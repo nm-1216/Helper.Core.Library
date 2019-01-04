@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：获取客户端 IP 地址，以及 IP 与 Long 类型数据相互转换。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.Collections.Generic;

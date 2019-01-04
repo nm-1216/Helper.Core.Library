@@ -1,6 +1,8 @@
 ﻿/*
  * 作用：通过 Quartz.Net 实现作业/任务调度。
  * Quartz 下载地址：https://www.quartz-scheduler.net/
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using Quartz.Impl;
 using Quartz;

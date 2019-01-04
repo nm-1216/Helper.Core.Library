@@ -150,6 +150,7 @@
     <Compile Include="CookieHelper.cs" />
     <Compile Include="CopyHelper.cs" />
     <Compile Include="DateTimeHelper.cs" />
+    <Compile Include="DynamicQueryHelper.cs" />
     <Compile Include="ExcelAssistHelper.cs" />
     <Compile Include="DataTableExpressionHelper.cs" />
     <Compile Include="DataTableHelper.cs" />
@@ -227,6 +228,7 @@
     <Content Include="Demo\CalcHelper.txt" />
     <Content Include="Demo\CookieExpressionHelper.txt" />
     <Content Include="Demo\CookieHelper.txt" />
+    <Content Include="DynamicQuery.xml" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="MSScriptControl">

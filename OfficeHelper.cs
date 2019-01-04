@@ -1,4 +1,9 @@
-﻿using System;
+﻿/*
+ * 利用 Office 组件把 WORD 或者 EXCEL 导出生成 HTML 文档
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
+ */
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;

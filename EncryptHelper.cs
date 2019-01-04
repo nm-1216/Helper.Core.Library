@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：字符串加密/解密，MD5，AES，DES，BASE64。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.IO;

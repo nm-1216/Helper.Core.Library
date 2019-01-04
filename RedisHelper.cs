@@ -1,6 +1,8 @@
 ﻿/*
  * 作用：通过 Redis.Net 实现数据缓存。
  * Redis 下载地址：http://redis.io/
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using ServiceStack.Redis;
 using ServiceStack.Text;

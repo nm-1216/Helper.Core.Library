@@ -1,5 +1,7 @@
 ﻿/*
  * 作用：利用 NPOI 读取 Excel 文档数据并导入 SqlServer 数据库。
+ * 联系：QQ 100101392
+ * 来源：https://github.com/snipen/Helper.Core.Library
  * */
 using System;
 using System.Collections.Generic;
