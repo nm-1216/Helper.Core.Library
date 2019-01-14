@@ -146,27 +146,22 @@ namespace Helper.Core.Library
 
                                     if (conditionItem.Symbol.ToUpper() == DynamicQueryConditionType.Like)
                                     {
-                                        stringBuilder.Append(string.Format("{0} like '%{1}%' ", conditionItem.Field, fieldPropertyItem.Value));
+                                        stringBuilder.Append(ContactFieldList(conditionItem.Field, conditionItem.FieldList, fieldPropertyItem.Value, " {0} like '%{1}%' "));
                                     }
                                     else if (conditionItem.Symbol.ToUpper() == DynamicQueryConditionType.ChatIndex)
                                     {
-                                        stringBuilder.Append(string.Format(" CHARINDEX('{1}', {0})>0 ", conditionItem.Field, fieldPropertyItem.Value));
+                                        stringBuilder.Append(ContactFieldList(conditionItem.Field, conditionItem.FieldList, fieldPropertyItem.Value, " CHARINDEX('{1}', {0})>0 "));
                                     }
                                     else
                                     {
                                         bool propertyStatus = !(fieldPropertyItem.Type.PropertyType == typeof(int) || fieldPropertyItem.Type.PropertyType == typeof(float) || fieldPropertyItem.Type.PropertyType == typeof(double));
-
-                                        stringBuilder.Append(conditionItem.Field);
-                                        stringBuilder.Append(conditionItem.Symbol);
-                                        if (propertyStatus)
+                                        
+                                        string replaceText = "'{1}'";
+                                        if (!propertyStatus)
                                         {
-                                            stringBuilder.Append("'");
+                                            replaceText = "{1}";
                                         }
-                                        stringBuilder.Append(fieldPropertyItem.Value);
-                                        if (propertyStatus)
-                                        {
-                                            stringBuilder.Append("'");
-                                        }
+                                        stringBuilder.Append(ContactFieldList(conditionItem.Field, conditionItem.FieldList, fieldPropertyItem.Value, string.Format(" {0}{2}{1} ", "{0}", replaceText, conditionItem.Symbol)));
                                     }
                                     conditionStatus = true;
                                 }
@@ -192,6 +187,36 @@ namespace Helper.Core.Library
         #endregion
 
         #region 逻辑处理私有函数
+        private static string ContactFieldList(string field, string fieldList, string value, string format)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+
+            List<string> fieldDataList = null;
+            if (string.IsNullOrEmpty(fieldList))
+            {
+                fieldDataList = new List<string>() { field };
+            }
+            else
+            {
+                fieldDataList = StringHelper.ToList<string>(fieldList, ",", true);
+            }
+
+            if (fieldDataList != null && fieldDataList.Count > 0)
+            {
+                stringBuilder.Append("(");
+                for (int index = 0; index < fieldDataList.Count; index++)
+                {
+                    stringBuilder.Append(string.Format(format, fieldDataList[index], value));
+                    if (index < fieldDataList.Count - 1)
+                    {
+                        stringBuilder.Append(" or ");
+                    }
+                }
+                stringBuilder.Append(")");
+            }
+
+            return stringBuilder.ToString();
+        }
         private static bool ValidCondition(string condition, string value, string data)
         {
             if (condition == DynamicQueryConditionType.Equal) return data == value;
@@ -256,6 +281,10 @@ namespace Helper.Core.Library
         /// 符号
         /// </summary>
         public string Symbol { get; set; }
+        /// <summary>
+        /// 字段列表
+        /// </summary>
+        public string FieldList { get; set; }
 
     }
     internal class DynamicQueryPropertyItem

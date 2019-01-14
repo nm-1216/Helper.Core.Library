@@ -80,6 +80,10 @@ namespace Helper.Core.Library
         /// Order 语句
         /// </summary>
         public const string OrderSql = "OrderSql";
+        /// <summary>
+        /// 表连接语句 例： inner join B on A.XX=B.XX
+        /// </summary>
+        public const string JoinSql = "";
     }
     #endregion
 
@@ -1835,13 +1839,13 @@ namespace Helper.Core.Library
 
                 stringBuilder.Append("if (@WhereSql<>'')\r\n");
                 stringBuilder.Append("begin\r\n");
-                stringBuilder.Append("set @Sql = 'select ' + @FieldSql + ' from (select ROW_NUMBER() over(order by ' + @OrderSql + ') AS RowNums,' + @Field + ' from ' + @TableName + ' with(nolock) where ' + @WhereSql + ') AS T ' + ' where RowNums between ' + Str((@PageIndex-1) * @PageSize + 1) + ' and ' + Str(@PageIndex * @PageSize) + ' order by ' + @OrderSql\r\n");
-                stringBuilder.Append("set @Sql1 = N'Select @Count=Count(0) from ['+@TableName+'] with(nolock) where '+@WhereSql\r\n");
+                stringBuilder.Append("set @Sql = 'select ' + @FieldSql + ' from (select ROW_NUMBER() over(order by ' + @OrderSql + ') AS RowNums,' + @Field + ' from ' + @TableName + ' with(nolock) ' + @JoinSql + ' where ' + @WhereSql + ') AS T ' + ' where RowNums between ' + Str((@PageIndex-1) * @PageSize + 1) + ' and ' + Str(@PageIndex * @PageSize) + ' order by ' + @OrderSql\r\n");
+                stringBuilder.Append("set @Sql1 = N'Select @Count=Count(0) from ['+@TableName+'] with(nolock) ' + @JoinSql + ' where '+@WhereSql\r\n");
                 stringBuilder.Append("end\r\n");
                 stringBuilder.Append("else\r\n");
                 stringBuilder.Append("begin\r\n");
-                stringBuilder.Append("set @Sql = 'select ' + @FieldSql + ' from (select ROW_NUMBER() over(order by ' + @OrderSql + ') AS RowNums,' + @Field + ' from ' + @TableName + ' with(nolock)) AS T ' + ' where RowNums between ' + Str((@PageIndex-1) * @PageSize + 1) + ' and ' + Str(@PageIndex * @PageSize) + ' order by ' + @OrderSql\r\n");
-                stringBuilder.Append("set @Sql1 = N'Select @Count=Count(0) from ['+@TableName+'] with(nolock)'\r\n");
+                stringBuilder.Append("set @Sql = 'select ' + @FieldSql + ' from (select ROW_NUMBER() over(order by ' + @OrderSql + ') AS RowNums,' + @Field + ' from ' + @TableName + ' with(nolock) ' + @JoinSql + ' ) AS T ' + ' where RowNums between ' + Str((@PageIndex-1) * @PageSize + 1) + ' and ' + Str(@PageIndex * @PageSize) + ' order by ' + @OrderSql\r\n");
+                stringBuilder.Append("set @Sql1 = N'Select @Count=Count(0) from ['+@TableName+'] with(nolock) ' + @JoinSql + ''\r\n");
                 stringBuilder.Append("end\r\n");
                 stringBuilder.Append("execute sp_executesql @Sql1, N'@Count int output',@Count=@TotalCount output\r\n");
                 stringBuilder.Append("set @PageCount = ceiling(convert(float,@TotalCount)/@PageSize)\r\n");

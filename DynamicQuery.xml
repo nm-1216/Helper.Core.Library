@@ -2,8 +2,8 @@
 <Items>
   <Item Name="query_one_condition" Value="select * from table ">
     <Group Type="and"><!-- AND 或者 OR -->
-      <If Field="id" Condition="!=" Value="0" Type="and" Symbol="=" /><!-- 值包括：=、!=、>、<、>=、<=、like、charindex -->
-      <If Field="name" Condition="!=" Value="未选择" Type="and" Symbol="=" />
+      <If Field="id" Condition="!=" Value="0" Type="and" Symbol="=" FieldList="" /><!-- 值包括：=、!=、>、<、>=、<=、like、charindex -->
+      <If Field="name" Condition="!=" Value="未选择" Type="and" Symbol="=" FieldList="" />
     </Group>
   </Item>
 </Items>

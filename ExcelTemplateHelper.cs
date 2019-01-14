@@ -169,13 +169,15 @@ namespace Helper.Core.Library
             }
 
             int templateDataCellCount = templateDataRow.Cells.Count;
-            sheet.ShiftRows(templateRowIndex, //开始行
-                            sheet.LastRowNum, //结束行
-                            dataList.Count - 1, //插入行总数
-                            true,        //是否复制行高
-                            false        //是否重置行高
-                            );
-
+            if (dataList.Count > 1)
+            {
+                sheet.ShiftRows(templateRowIndex, //开始行
+                                sheet.LastRowNum, //结束行
+                                dataList.Count - 1, //插入行总数
+                                true,        //是否复制行高
+                                false        //是否重置行高
+                                );
+            }
             IRow dataRow = null;
             ICell templateCell = null;
             ICell dataCell = null;
