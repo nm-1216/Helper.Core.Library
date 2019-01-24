@@ -2,6 +2,13 @@
  * 作用：利用 MSScriptControl 组件实现公式计算，添加引用之后，右键【属性】并设置嵌入互操作类型为 False。
  * 联系：QQ 100101392
  * 来源：https://github.com/snipen/Helper.Core.Library
+ * 
+ * 简单公式计算：
+ * int result = CalcHelper.Calc<int>("a + b * c", new { a = 10, b = 20, c = 5 });
+ * 
+ * 带有 JavaScript 函数的公式计算：
+ * string formula = "function Add(x, y){ return x + y; } Add(a, b);";
+ * int result = CalcHelper.Calc<int>(formula, new { a = 10, b = 30 });
  * */
 using Helper.Core.Library;
 using System;

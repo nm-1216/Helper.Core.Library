@@ -83,7 +83,7 @@ namespace Helper.Core.Library
         /// <summary>
         /// 表连接语句 例： inner join B on A.XX=B.XX
         /// </summary>
-        public const string JoinSql = "";
+        public const string JoinSql = "JoinSql";
     }
     #endregion
 

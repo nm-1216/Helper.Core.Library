@@ -225,10 +225,11 @@
     <Compile Include="ZipHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Demo\CalcHelper.txt" />
     <Content Include="Demo\CookieExpressionHelper.txt" />
     <Content Include="Demo\CookieHelper.txt" />
-    <Content Include="DynamicQuery.xml" />
+    <Content Include="DynamicQuery.xml">
+      <SubType>Designer</SubType>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="MSScriptControl">

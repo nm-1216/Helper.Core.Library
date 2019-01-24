@@ -2,6 +2,14 @@
  * 作用：读取/设置 Cookie 数据，是对 CookieHelper 的扩展，参数使用表达式，目的是减少属性名的拼写错误。
  * 联系：QQ 100101392
  * 来源：https://github.com/snipen/Helper.Core.Library
+ * 
+ * 实体属性和 Cookie 名称相同：
+ * CookieEntity cookieEntity = new CookieEntity() { UserID = 1, UserCode = "admin", UserNickName = "管理员" };
+ * CookieExpressionHelper.SetCookie<CookieEntity>("cookieName", cookieEntity, DateTime.Now.AddMinutes(5));
+ * 
+ * 实体属性和 Cookie 名称不同，实体属性名为 UserID， Cookie 名称为 ID：
+ * CookieEntity cookieEntity = new CookieEntity() { UserID = 1, UserCode = "admin", UserNickName = "管理员" };
+ * CookieExpressionHelper.SetCookieT<CookieEntity>("cookieName", cookieEntity, DateTime.Now.AddMinutes(5), null, p => new { ID = p.UserID });
  * */
 using System;
 using System.Collections.Generic;

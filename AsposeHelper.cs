@@ -2,6 +2,9 @@
  * 作用：利用 Aspose 库把 Excel 导出生成 HTML 文档
  * 联系：QQ 100101392
  * 来源：https://github.com/snipen/Helper.Core.Library
+ * 
+ * 导出单个表单生成 HTML 文档：
+ * AsposeHelper.ExcelToHtmlFile(@"C:\1.xlsx", @"C:\1.html", "Sheet1");
  * */
 using System;
 using System.Collections.Generic;
