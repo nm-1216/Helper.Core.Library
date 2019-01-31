@@ -1388,7 +1388,14 @@ namespace Helper.Core.Library
 
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("select ");
-            stringBuilder.Append(GetQueryFieldSql<T>(queryLambda));
+            if (queryLambda == null)
+            {
+                stringBuilder.Append(" * ");
+            }
+            else
+            {
+                stringBuilder.Append(GetQueryFieldSql<T>(queryLambda));
+            }
             stringBuilder.Append(" from ");
             stringBuilder.Append(GetDataBaseTableName<T>(tableName));
             stringBuilder.Append(" ");
@@ -1420,7 +1427,14 @@ namespace Helper.Core.Library
 
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("select ");
-            stringBuilder.Append(GetQueryFieldSql<T>(queryLambda));
+            if (queryLambda == null)
+            {
+                stringBuilder.Append(" * ");
+            }
+            else
+            {
+                stringBuilder.Append(GetQueryFieldSql<T>(queryLambda));
+            }
             stringBuilder.Append(" from ");
             stringBuilder.Append(GetDataBaseTableName<T>(tableName));
             stringBuilder.Append(" ");
@@ -1813,6 +1827,56 @@ namespace Helper.Core.Library
         /// 导出数据信息
         /// </summary>
         public string OutputName { get; set; }
+    }
+    public class DataBaseParameterItem
+    {
+        public DataBaseParameterItem() { }
+        public DataBaseParameterItem(string tableName, string primaryKey, int pageIndex, int pageSize, string whereSql = null, string orderSql = null, string joinSql = null)
+        {
+            this.TableName = tableName;
+            this.PrimaryKey = primaryKey;
+            this.PageIndex = pageIndex;
+            this.PageSize = pageSize;
+            this.WhereSql = whereSql;
+            this.OrderSql = orderSql;
+            this.JoinSql = joinSql;
+        }
+        /// <summary>
+        /// 查询语句，表连接查询时，主表用 T 代替
+        /// </summary>
+        public string FieldSql { get; set; }
+        /// <summary>
+        /// 查询语句，值为空时，与 FieldSql 字段相同
+        /// </summary>
+        public string Field { get; set; }
+        /// <summary>
+        /// 表名称
+        /// </summary>
+        public string TableName { get; set; }
+        /// <summary>
+        /// 主键名称
+        /// </summary>
+        public string PrimaryKey { get; set; }
+        /// <summary>
+        /// 页索引，从 1 开始
+        /// </summary>
+        public int PageIndex { get; set; }
+        /// <summary>
+        /// 页大小
+        /// </summary>
+        public int PageSize { get; set; }
+        /// <summary>
+        /// Where 语句
+        /// </summary>
+        public string WhereSql { get; set; }
+        /// <summary>
+        /// Order 语句
+        /// </summary>
+        public string OrderSql { get; set; }
+        /// <summary>
+        /// 表连接语句 例： inner join B on A.XX=B.XX
+        /// </summary>
+        public string JoinSql { get; set; }
     }
 
     #region SqlServer 分页查询语句
