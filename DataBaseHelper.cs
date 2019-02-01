@@ -557,7 +557,7 @@ namespace Helper.Core.Library
         }
         #endregion
 
-        #region ExecuteNonQuery
+        #region ExecuteNonQuery 返回影响操作的数据行数
         /// <summary>
         /// ExecuteNonQuery
         /// </summary>
@@ -594,7 +594,7 @@ namespace Helper.Core.Library
         /// </summary>
         /// <param name="con">DbConnection</param>
         /// <param name="transaction">DbTransaction</param>
-        /// <param name="commandText">Sql 语句</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
         /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
         /// <returns></returns>
         public static int TransactionNonQuery(DbConnection con, DbTransaction transaction, string commandText, object parameterList = null)
@@ -671,7 +671,7 @@ namespace Helper.Core.Library
         /// <typeparam name="T">基类类型，例：int</typeparam>
         /// <param name="con">DbConnection</param>
         /// <param name="transaction">DbTransaction</param>
-        /// <param name="commandText">Sql 语句</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
         /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
         /// <returns></returns>
         public static dynamic TransactionScalar<T>(DbConnection con, DbTransaction transaction, string commandText, object parameterList = null)
@@ -777,7 +777,7 @@ namespace Helper.Core.Library
             if (!string.IsNullOrEmpty(parameterPageCountName)) outParameterList.Add("@" + parameterPageCountName, 0);
             if (!string.IsNullOrEmpty(parameterTotalCountName)) outParameterList.Add("@" + parameterTotalCountName, 0);
 
-            if (string.IsNullOrEmpty(commandText) && DataBaseType == DataBaseTypeEnum.Sql)
+            if (string.IsNullOrEmpty(commandText) && dataBaseType == DataBaseTypeEnum.Sql)
             {
                 commandText = SqlDataBaseItem.PaginationSql;
             }
@@ -900,7 +900,7 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="con">DbConnection</param>
         /// <param name="transaction">DbTransaction</param>
-        /// <param name="commandText">Sql 语句</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
         /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
         /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
         /// <param name="reflectionType">反射类型</param>
@@ -916,7 +916,7 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="con">DbConnection</param>
         /// <param name="transaction">DbTransaction</param>
-        /// <param name="commandText">Sql 语句</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
         /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
         /// <param name="pageCount">页总数，输出</param>
         /// <param name="totalCount">数据总数，输出</param>
@@ -971,7 +971,7 @@ namespace Helper.Core.Library
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="con">DbConnection</param>
         /// <param name="transaction">DbTransaction</param>
-        /// <param name="commandText">Sql 语句</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
         /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
         /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
         /// <param name="reflectionType">反射类型</param>
@@ -1006,6 +1006,218 @@ namespace Helper.Core.Library
         {
             List<T> dataList = TransactionEntityList<T>(connectionString, dataBaseType, transactionCommandList, reflectionType);
             if (dataList.Count > 0) return dataList[0];
+            return null;
+        }
+        #endregion
+
+        #region ToDataSet 返回 DataSet
+        /// <summary>
+        /// 返回 DataSet
+        /// </summary>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataSet ToDataSet(string commandText, object parameterList, CommandType commandType = CommandType.Text)
+        {
+            return ToDataSet(null, null, commandText, parameterList, commandType);
+        }
+        /// <summary>
+        /// 返回 DataSet
+        /// </summary>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="pageCount">页总数，输出</param>
+        /// <param name="totalCount">数据总数，输出</param>
+        /// <param name="parameterPageCountName">页总数参数名称，例如：PageCount</param>
+        /// <param name="parameterTotalCountName">数据总数参数名称，例如：TotalCount</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataSet ToDataSet(string commandText, object parameterList, ref int pageCount, ref int totalCount, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text)
+        {
+            return ToDataSet(null, null, commandText, parameterList, ref pageCount, ref totalCount, parameterPageCountName, parameterTotalCountName, commandType);
+        }
+        /// <summary>
+        /// 返回 DataSet
+        /// </summary>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataSet ToDataSet(string connectionString, string dataBaseType, string commandText, object parameterList=null, CommandType commandType = CommandType.Text)
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+            return ReturnDataSet(connectionString, dataBaseType, commandText, parameterDict, commandType);
+        }
+        /// <summary>
+        /// 返回 DataSet
+        /// </summary>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="pageCount">页总数，输出</param>
+        /// <param name="totalCount">数据总数，输出</param>
+        /// <param name="parameterPageCountName">页总数参数名称，例如：PageCount</param>
+        /// <param name="parameterTotalCountName">数据总数参数名称，例如：TotalCount</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataSet ToDataSet(string connectionString, string dataBaseType, string commandText, object parameterList, ref int pageCount, ref int totalCount, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text)
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+            return ReturnDataSet(connectionString, dataBaseType, commandText, parameterDict, ref pageCount, ref totalCount, parameterPageCountName, parameterTotalCountName, commandType);
+        }
+        /// <summary>
+        /// 返回 DataSet
+        /// </summary>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataSet TransactionDataSet(DbConnection con, DbTransaction transaction, string commandText, object parameterList, CommandType commandType = CommandType.Text)
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+            return ReturnDataSet(null, null, commandText, parameterDict, commandType, con, transaction);
+        }
+        /// <summary>
+        /// 返回 DataSet
+        /// </summary>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="pageCount">页总数，输出</param>
+        /// <param name="totalCount">数据总数，输出</param>
+        /// <param name="parameterPageCountName">页总数参数名称，例如：PageCount</param>
+        /// <param name="parameterTotalCountName">数据总数参数名称，例如：TotalCount</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataSet TransactionDataSet(DbConnection con, DbTransaction transaction, string commandText, object parameterList, ref int pageCount, ref int totalCount, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text)
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+            return ReturnDataSet(null, null, commandText, parameterDict, ref pageCount, ref totalCount, parameterPageCountName, parameterTotalCountName, commandType, con, transaction);
+        }
+        #endregion
+
+        #region ToDataTable 返回 DataTable
+        /// <summary>
+        /// 返回 DataTable
+        /// </summary>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataTable ToDataTable(string commandText, object parameterList, CommandType commandType = CommandType.Text)
+        {
+            DataSet dataSet = ToDataSet(commandText, parameterList, commandType);
+            if (dataSet != null && dataSet.Tables.Count > 0)
+            {
+                return dataSet.Tables[0];
+            }
+            return null;
+        }
+        /// <summary>
+        /// 返回 DataTable
+        /// </summary>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="pageCount">页总数，输出</param>
+        /// <param name="totalCount">数据总数，输出</param>
+        /// <param name="parameterPageCountName">页总数参数名称，例如：PageCount</param>
+        /// <param name="parameterTotalCountName">数据总数参数名称，例如：TotalCount</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataTable ToDataTable(string commandText, object parameterList, ref int pageCount, ref int totalCount, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text)
+        {
+            DataSet dataSet = ToDataSet(commandText, parameterList, ref pageCount, ref totalCount, parameterPageCountName, parameterTotalCountName, commandType);
+            if (dataSet != null && dataSet.Tables.Count > 0)
+            {
+                return dataSet.Tables[0];
+            }
+            return null;
+        }
+        /// <summary>
+        /// 返回 DataTable
+        /// </summary>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataTable ToDataTable(string connectionString, string dataBaseType, string commandText, object parameterList = null, CommandType commandType = CommandType.Text)
+        {
+            DataSet dataSet = ToDataSet(connectionString, dataBaseType, commandText, parameterList, commandType);
+            if (dataSet != null && dataSet.Tables.Count > 0)
+            {
+                return dataSet.Tables[0];
+            }
+            return null;
+        }
+        /// <summary>
+        /// 返回 DataTable
+        /// </summary>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="pageCount">页总数，输出</param>
+        /// <param name="totalCount">数据总数，输出</param>
+        /// <param name="parameterPageCountName">页总数参数名称，例如：PageCount</param>
+        /// <param name="parameterTotalCountName">数据总数参数名称，例如：TotalCount</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataTable ToDataTable(string connectionString, string dataBaseType, string commandText, object parameterList, ref int pageCount, ref int totalCount, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text)
+        {
+            DataSet dataSet = ToDataSet(connectionString, dataBaseType, commandText, parameterList, ref pageCount, ref totalCount, parameterPageCountName, parameterTotalCountName, commandType);
+            if (dataSet != null && dataSet.Tables.Count > 0)
+            {
+                return dataSet.Tables[0];
+            }
+            return null;
+        }
+        /// <summary>
+        /// 返回 DataTable
+        /// </summary>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataTable TransactionDataTable(DbConnection con, DbTransaction transaction, string commandText, object parameterList, CommandType commandType = CommandType.Text)
+        {
+            DataSet dataSet = TransactionDataSet(con, transaction, commandText, parameterList, commandType);
+            if (dataSet != null && dataSet.Tables.Count > 0)
+            {
+                return dataSet.Tables[0];
+            }
+            return null;
+        }
+        /// <summary>
+        /// 返回 DataTable
+        /// </summary>
+        /// <param name="con">DbConnection</param>
+        /// <param name="transaction">DbTransaction</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="pageCount">页总数，输出</param>
+        /// <param name="totalCount">数据总数，输出</param>
+        /// <param name="parameterPageCountName">页总数参数名称，例如：PageCount</param>
+        /// <param name="parameterTotalCountName">数据总数参数名称，例如：TotalCount</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static DataTable TransactionDataTable(DbConnection con, DbTransaction transaction, string commandText, object parameterList, ref int pageCount, ref int totalCount, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text)
+        {
+            DataSet dataSet = TransactionDataSet(con, transaction, commandText, parameterList, ref pageCount, ref totalCount, parameterPageCountName, parameterTotalCountName, commandType);
+            if(dataSet != null && dataSet.Tables.Count > 0)
+            {
+                return dataSet.Tables[0];
+            }
             return null;
         }
         #endregion
@@ -1164,6 +1376,17 @@ namespace Helper.Core.Library
             if (connection.State != ConnectionState.Open) connection.Open();
             return connection;
         }
+        private static DbDataAdapter CreateDbDataAdapter(string dataBaseType = null)
+        {
+            if (string.IsNullOrEmpty(dataBaseType)) dataBaseType = DataBaseType;
+            DbDataAdapter dataAdapter = null;
+            switch(dataBaseType)
+            {
+                case DataBaseTypeEnum.MySql: dataAdapter = new MySqlDataAdapter(); break;
+                default: dataAdapter = new SqlDataAdapter(); break;
+            }
+            return dataAdapter;
+        }
         private static DbCommand CreateDbCommand(DbConnection connection, DbCommand command, string commandText, Dictionary<string, object> parameterList, Dictionary<string, object> outParameterList, CommandType commandType = CommandType.Text)
         {
             if (command == null)
@@ -1223,7 +1446,7 @@ namespace Helper.Core.Library
             if (!string.IsNullOrEmpty(parameterPageCountName)) outParameterList.Add("@" + parameterPageCountName, 0);
             if (!string.IsNullOrEmpty(parameterTotalCountName)) outParameterList.Add("@" + parameterTotalCountName, 0);
 
-            if (string.IsNullOrEmpty(commandText) && DataBaseType == DataBaseTypeEnum.Sql)
+            if (string.IsNullOrEmpty(commandText) && dataBaseType == DataBaseTypeEnum.Sql)
             {
                 commandText = SqlDataBaseItem.PaginationSql;
             }
@@ -1243,6 +1466,52 @@ namespace Helper.Core.Library
             totalCount = commandTotalCount;
 
             return dataList;
+        }
+        private static DataSet ReturnDataSet(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, CommandType commandType = CommandType.Text, DbConnection con = null, DbTransaction transaction = null)
+        {
+            DataSet dataSet = null;
+            ExecuteCommand(connectionString, dataBaseType, commandText, parameterList, null, commandType, (DbCommand command) =>
+            {
+                if (dataSet == null) dataSet = new DataSet();
+
+                DbDataAdapter dataAdapter = CreateDbDataAdapter(dataBaseType);
+                dataAdapter.SelectCommand = command;
+                dataAdapter.Fill(dataSet);
+
+            }, con, transaction);
+            return dataSet;
+        }
+        private static DataSet ReturnDataSet(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, ref int pageCount, ref int totalCount, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text, DbConnection con = null, DbTransaction transaction = null)
+        {
+            DataSet dataSet = null;
+            Dictionary<string, object> outParameterList = new Dictionary<string, object>();
+            if (!string.IsNullOrEmpty(parameterPageCountName)) outParameterList.Add("@" + parameterPageCountName, 0);
+            if (!string.IsNullOrEmpty(parameterTotalCountName)) outParameterList.Add("@" + parameterTotalCountName, 0);
+
+            if(string.IsNullOrEmpty(commandText) && dataBaseType == DataBaseTypeEnum.Sql)
+            {
+                commandText = SqlDataBaseItem.PaginationSql;
+            }
+
+            int commandPageCount = 0;
+            int commandTotalCount = 0;
+
+            ExecuteCommand(connectionString, dataBaseType, commandText, parameterList, outParameterList, commandType, (DbCommand command) =>
+            {
+                if (dataSet == null) dataSet = new DataSet();
+
+                DbDataAdapter dataAdapter = CreateDbDataAdapter(dataBaseType);
+                dataAdapter.SelectCommand = command;
+                dataAdapter.Fill(dataSet);
+
+                if (!string.IsNullOrEmpty(parameterPageCountName)) commandPageCount = (int)command.Parameters["@" + parameterPageCountName].Value;
+                if (!string.IsNullOrEmpty(parameterTotalCountName)) commandTotalCount = (int)command.Parameters["@" + parameterTotalCountName].Value;
+            }, con, transaction);
+
+            pageCount = commandPageCount;
+            totalCount = commandTotalCount;
+
+            return dataSet;
         }
         private static bool ExecuteInsert(string connectionString, string dataBaseType, string tableName, object data, string[] ignorePropertyList = null, DbConnection con = null, DbTransaction transaction = null)
         {
