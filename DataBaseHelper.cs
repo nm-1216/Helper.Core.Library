@@ -2100,7 +2100,7 @@ namespace Helper.Core.Library
     public class DataBaseParameterItem
     {
         public DataBaseParameterItem() { }
-        public DataBaseParameterItem(string tableName, string primaryKey, int pageIndex, int pageSize, string whereSql = null, string orderSql = null, string joinSql = null)
+        public DataBaseParameterItem(string tableName, string primaryKey, int pageIndex, int pageSize, string whereSql = "", string orderSql = "", string joinSql = "")
         {
             this.TableName = tableName;
             this.PrimaryKey = primaryKey;
