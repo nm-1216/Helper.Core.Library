@@ -394,7 +394,7 @@ namespace Helper.Core.Library
 
             List<string> filterList = new List<string>()
             {
-                "*", "'", "<", ">", "=", "select", "delete", "update", "insert", "create", "exec", "execute"
+                "*", "'", "<", ">", "=", "select", "delete", "update", "insert", "create", "exec", "execute", "drop", "declare", "cast"
             };
             if (specList != null && specList.Length > 0)
             {

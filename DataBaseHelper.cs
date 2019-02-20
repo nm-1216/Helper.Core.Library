@@ -15,6 +15,7 @@ using System.Linq.Expressions;
 using Helper.Core.Library.Translator;
 using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
+using System.Threading.Tasks;
 
 namespace Helper.Core.Library
 {
@@ -570,6 +571,17 @@ namespace Helper.Core.Library
             return ExecuteNonQuery(null, null, commandText, parameterList, commandType);
         }
         /// <summary>
+        /// ExecuteNonQuery（异步）
+        /// </summary>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static async Task<int> ExecuteNonQueryAsync(string commandText, object parameterList = null, CommandType commandType = CommandType.Text)
+        {
+            return await ExecuteNonQueryAsync(null, null, commandText, parameterList, commandType);
+        }
+        /// <summary>
         /// ExecuteNonQuery
         /// </summary>
         /// <param name="connectionString">连接字符串</param>
@@ -585,8 +597,31 @@ namespace Helper.Core.Library
             int result = 0;
             ExecuteCommand(connectionString, dataBaseType, commandText, parameterDict, null, commandType, (DbCommand command) =>
             {
+                if (command.Connection.State != ConnectionState.Open) command.Connection.Open();
                 result = command.ExecuteNonQuery();
             });
+            return result;
+        }
+        /// <summary>
+        /// ExecuteNonQuery（异步）
+        /// </summary>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static async Task<int> ExecuteNonQueryAsync(string connectionString, string dataBaseType, string commandText, object parameterList = null, CommandType commandType = CommandType.Text)
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+
+            int result = 0;
+
+            await ExecuteCommandAsync(connectionString, dataBaseType, commandText, parameterDict, null, commandType, async (DbCommand command) =>
+            {
+                result = await command.ExecuteNonQueryAsync();
+            });
+
             return result;
         }
         /// <summary>
@@ -644,6 +679,18 @@ namespace Helper.Core.Library
             return ExecuteScalar<T>(null, null, commandText, parameterList, commandType);
         }
         /// <summary>
+        /// ExecuteScalar（异步）
+        /// </summary>
+        /// <typeparam name="T">基类类型，例：int</typeparam>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static async Task<dynamic> ExecuteScalarAsync<T>(string commandText, object parameterList = null, CommandType commandType = CommandType.Text)
+        {
+            return await ExecuteScalarAsync<T>(null, null, commandText, parameterList, commandType);
+        }
+        /// <summary>
         /// ExecuteScalar
         /// </summary>
         /// <typeparam name="T">基类类型，例：int</typeparam>
@@ -661,6 +708,28 @@ namespace Helper.Core.Library
             ExecuteCommand(connectionString, dataBaseType, commandText, parameterDict, null, commandType, (DbCommand command) =>
             {
                 result = command.ExecuteScalar();
+            });
+            if (result == null) return default(T);
+            return (T)Convert.ChangeType(result, typeof(T));
+        }
+        /// <summary>
+        /// ExecuteScalar（异步）
+        /// </summary>
+        /// <typeparam name="T">基类类型，例：int</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <returns></returns>
+        public static async Task<dynamic> ExecuteScalarAsync<T>(string connectionString, string dataBaseType, string commandText, object parameterList = null, CommandType commandType = CommandType.Text)
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+
+            object result = null;
+            await ExecuteCommandAsync(connectionString, dataBaseType, commandText, parameterDict, null, commandType, async (DbCommand command) =>
+            {
+                result = await command.ExecuteScalarAsync();
             });
             if (result == null) return default(T);
             return (T)Convert.ChangeType(result, typeof(T));
@@ -814,6 +883,20 @@ namespace Helper.Core.Library
             return ToEntityList<T>(null, null, commandText, parameterList, propertyMatchList, commandType, reflectionType);
         }
         /// <summary>
+        /// 返回实体数据列表（异步）
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static async Task<List<T>> ToEntityListAsync<T>(string commandText, object parameterList = null, object propertyMatchList = null, CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            return await ToEntityListAsync<T>(null, null, commandText, parameterList, propertyMatchList, commandType, reflectionType);
+        }
+        /// <summary>
         /// 返回实体数据列表
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
@@ -830,6 +913,22 @@ namespace Helper.Core.Library
         public static List<T> ToEntityList<T>(string commandText, object parameterList, ref int pageCount, ref int totalCount, object propertyMatchList, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
         {
             return ToEntityList<T>(null, null, commandText, parameterList, ref pageCount, ref totalCount, propertyMatchList, parameterPageCountName, parameterTotalCountName, commandType, reflectionType);
+        }
+        /// <summary>
+        /// 返回实体数据列表（异步）
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="propertyMatchList">属性匹配，，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="parameterPageCountName">页总数参数名称，例如：PageCount</param>
+        /// <param name="parameterTotalCountName">数据总数参数名称，例如：TotalCount</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static async Task<DataBasePaginationDataItem<T>> ToEntityListAsync<T>(string commandText, object parameterList, object propertyMatchList, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            return await ToEntityListAsync<T>(null, null, commandText, parameterList, propertyMatchList, parameterPageCountName, parameterTotalCountName, commandType, reflectionType);
         }
         /// <summary>
         /// 返回实体数据列表（事务）
@@ -858,6 +957,23 @@ namespace Helper.Core.Library
         {
             Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
             return ReturnEntityList<T>(connectionString, dataBaseType, commandText, parameterDict, propertyMatchList, commandType, reflectionType);
+        }
+        /// <summary>
+        /// 返回实体数据列表（异步）
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static async Task<List<T>> ToEntityListAsync<T>(string connectionString, string dataBaseType, string commandText, object parameterList = null, object propertyMatchList = null, CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+            return await ReturnEntityListAsync<T>(connectionString, dataBaseType, commandText, parameterDict, propertyMatchList, commandType, reflectionType);
         }
         /// <summary>
         /// 返回实体数据列表（事务）
@@ -891,8 +1007,26 @@ namespace Helper.Core.Library
         public static List<T> ToEntityList<T>(string connectionString, string dataBaseType, string commandText, object parameterList, ref int pageCount, ref int totalCount, object propertyMatchList, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
         {
             Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
-
             return ReturnEntityList<T>(connectionString, dataBaseType, commandText, parameterDict, ref pageCount, ref totalCount, propertyMatchList, parameterPageCountName, parameterTotalCountName, commandType, reflectionType);
+        }
+        /// <summary>
+        /// 返回实体数据列表（异步）
+        /// </summary>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="dataBaseType">数据库类型</param>
+        /// <param name="commandText">Sql 语句或者存储过程名称</param>
+        /// <param name="parameterList">参数列表，new {} 或 Dictionary&lt;string, object&gt;</param>
+        /// <param name="propertyMatchList">属性匹配，Dictionary&lt;string, object&gt; 或 new {}</param>
+        /// <param name="parameterPageCountName">页总数参数名称，例如：PageCount</param>
+        /// <param name="parameterTotalCountName">数据总数参数名称，例如：TotalCount</param>
+        /// <param name="commandType">CommandType 枚举类型</param>
+        /// <param name="reflectionType">反射类型</param>
+        /// <returns></returns>
+        public static async Task<DataBasePaginationDataItem<T>> ToEntityListAsync<T>(string connectionString, string dataBaseType, string commandText, object parameterList, object propertyMatchList, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            Dictionary<string, object> parameterDict = CommonHelper.GetParameterDict(parameterList);
+            return await ReturnEntityListAsync<T>(connectionString, dataBaseType, commandText, parameterDict, propertyMatchList, parameterPageCountName, parameterTotalCountName, commandType, reflectionType);
         }
         /// <summary>
         /// 返回实体数据列表
@@ -1373,7 +1507,6 @@ namespace Helper.Core.Library
                 case DataBaseTypeEnum.MySql: connection = new MySqlConnection(connectionString); break;
                 default: connection = new SqlConnection(connectionString); break;
             }
-            if (connection.State != ConnectionState.Open) connection.Open();
             return connection;
         }
         private static DbDataAdapter CreateDbDataAdapter(string dataBaseType = null)
@@ -1438,6 +1571,15 @@ namespace Helper.Core.Library
             }, con, transaction);
             return dataList;
         }
+        private static async Task<List<T>> ReturnEntityListAsync<T>(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, object propertyMatchList, CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression, DbConnection con = null, DbTransaction transaction = null) where T : class, new()
+        {
+            List<T> dataList = null;
+            await ExecuteCommandAsync(connectionString, dataBaseType, commandText, parameterList, null, commandType, async (DbCommand command) =>
+            {
+                dataList = await DataReaderToEntityListAsync<T>(command, propertyMatchList, reflectionType, con, transaction);
+            }, con, transaction);
+            return dataList;
+        }
         private static List<T> ReturnEntityList<T>(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, ref int pageCount, ref int totalCount, object propertyMatchList, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression, DbConnection con = null, DbTransaction transaction = null) where T : class, new()
         {
             List<T> dataList = null;
@@ -1466,6 +1608,35 @@ namespace Helper.Core.Library
             totalCount = commandTotalCount;
 
             return dataList;
+        }
+        private static async Task<DataBasePaginationDataItem<T>> ReturnEntityListAsync<T>(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, object propertyMatchList, string parameterPageCountName = "PageCount", string parameterTotalCountName = "TotalCount", CommandType commandType = CommandType.Text, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression, DbConnection con = null, DbTransaction transaction = null) where T : class, new()
+        {
+            DataBasePaginationDataItem<T> paginationDataItem = new DataBasePaginationDataItem<T>();
+
+            Dictionary<string, object> outParameterList = new Dictionary<string, object>();
+            if (!string.IsNullOrEmpty(parameterPageCountName)) outParameterList.Add("@" + parameterPageCountName, 0);
+            if (!string.IsNullOrEmpty(parameterTotalCountName)) outParameterList.Add("@" + parameterTotalCountName, 0);
+
+            if (string.IsNullOrEmpty(commandText) && dataBaseType == DataBaseTypeEnum.Sql)
+            {
+                commandText = SqlDataBaseItem.PaginationSql;
+            }
+
+            int commandPageCount = 0;
+            int commandTotalCount = 0;
+
+            await ExecuteCommandAsync(connectionString, dataBaseType, commandText, parameterList, outParameterList, commandType, async (DbCommand command) =>
+            {
+                paginationDataItem.DataList = await DataReaderToEntityListAsync<T>(command, propertyMatchList, reflectionType, con, transaction);
+
+                if (!string.IsNullOrEmpty(parameterPageCountName)) commandPageCount = (int)command.Parameters["@" + parameterPageCountName].Value;
+                if (!string.IsNullOrEmpty(parameterTotalCountName)) commandTotalCount = (int)command.Parameters["@" + parameterTotalCountName].Value;
+            }, con, transaction);
+
+            paginationDataItem.PageCount = commandPageCount;
+            paginationDataItem.TotalCount = commandTotalCount;
+
+            return paginationDataItem;
         }
         private static DataSet ReturnDataSet(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, CommandType commandType = CommandType.Text, DbConnection con = null, DbTransaction transaction = null)
         {
@@ -1765,6 +1936,38 @@ namespace Helper.Core.Library
                 if (command != null) command.Dispose();
             }
         }
+        private static async Task ExecuteCommandAsync(string connectionString, string dataBaseType, string commandText, Dictionary<string, object> parameterList, Dictionary<string, object> outParameterList, CommandType commandType = CommandType.Text, Func<DbCommand, Task> callback = null, DbConnection con = null, DbTransaction transaction = null)
+        {
+            DbCommand command = null;
+            try
+            {
+                if (con == null)
+                {
+                    using (con = CreateDbConnection(connectionString, dataBaseType))
+                    {
+                        if (con.State != ConnectionState.Open) await con.OpenAsync();
+
+                        command = CreateDbCommand(con, null, commandText, parameterList, outParameterList, commandType);
+                        if (transaction != null) command.Transaction = transaction;
+                        if (callback != null) await callback(command);
+                    }
+                }
+                else
+                {
+                    command = CreateDbCommand(con, null, commandText, parameterList, outParameterList, commandType);
+                    if (transaction != null) command.Transaction = transaction;
+                    if (callback != null) await callback(command);
+                }
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                if (command != null) command.Dispose();
+            }
+        }
         private static object ExecuteTransaction<T>(string connectionString, string dataBaseType, List<DataBaseTransactionItem> transactionItemList, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
         {
             return ExecuteTransaction(connectionString, dataBaseType, (DbConnection con, DbTransaction transaction) =>
@@ -1852,7 +2055,20 @@ namespace Helper.Core.Library
         private static void ExecuteDataReader(Action<DbDataReader> callback, DbCommand command)
         {
             if (callback == null) return;
+
             using (DbDataReader dataReader = command.ExecuteReader(CommandBehavior.CloseConnection))
+            {
+                while (dataReader.Read())
+                {
+                    callback(dataReader);
+                }
+            }
+        }
+        private static async Task ExecuteDataReaderAsync(Action<DbDataReader> callback, DbCommand command)
+        {
+            if (callback == null) return;
+
+            using (DbDataReader dataReader = await command.ExecuteReaderAsync(CommandBehavior.CloseConnection))
             {
                 while (dataReader.Read())
                 {
@@ -1882,31 +2098,51 @@ namespace Helper.Core.Library
         {
             List<T> dataList = new List<T>();
 
+            using (DbDataReader dataReader = (con == null && transaction == null) ? command.ExecuteReader(CommandBehavior.CloseConnection) : command.ExecuteReader())
+            {
+                dataList = ReadDataFromDataReader<T>(dataReader, propertyMatchList, reflectionType);
+            }
+            return dataList;
+        }
+        private static async Task<List<T>> DataReaderToEntityListAsync<T>(DbCommand command, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression, DbConnection con = null, DbTransaction transaction = null) where T : class, new()
+        {
+            List<T> dataList = new List<T>();
+
+            using (DbDataReader dataReader = (con == null && transaction == null) ? await command.ExecuteReaderAsync(CommandBehavior.CloseConnection) : await command.ExecuteReaderAsync())
+            {
+                dataList = ReadDataFromDataReader<T>(dataReader, propertyMatchList, reflectionType);
+            }
+            return dataList;
+        }
+        private static List<T> ReadDataFromDataReader<T>(DbDataReader dataReader, object propertyMatchList = null, ReflectionTypeEnum reflectionType = ReflectionTypeEnum.Expression) where T : class, new()
+        {
+            if (dataReader == null) return null;
+
+            List<T> dataList = new List<T>();
+
             bool initStatus = false;
             List<string> columnNameList = null;
             Dictionary<PropertyInfo, string> columnNameDict = null;
 
-            using (DbDataReader dataReader = (con == null && transaction == null) ? command.ExecuteReader(CommandBehavior.CloseConnection) : command.ExecuteReader())
-            {
-                dynamic propertySetDict = null;
-                if (reflectionType != ReflectionTypeEnum.Original) propertySetDict = ReflectionExtendHelper.PropertySetCallDict<T>(reflectionType);
+            dynamic propertySetDict = null;
+            if (reflectionType != ReflectionTypeEnum.Original) propertySetDict = ReflectionExtendHelper.PropertySetCallDict<T>(reflectionType);
 
-                if (dataReader.Read())
+            if (dataReader.Read())
+            {
+                if (!initStatus)
                 {
-                    if (!initStatus)
-                    {
-                        columnNameList = new List<string>();
-                        for (int index = 0; index < dataReader.FieldCount; index++) columnNameList.Add(dataReader.GetName(index));
-                        columnNameDict = InitDbToEntityMapper<T>(dataReader, propertyMatchList);
-                        initStatus = true;
-                    }
-                    dataList.Add(DataReaderToEntity<T>(dataReader, propertySetDict, columnNameList, columnNameDict));
+                    columnNameList = new List<string>();
+                    for (int index = 0; index < dataReader.FieldCount; index++) columnNameList.Add(dataReader.GetName(index));
+                    columnNameDict = InitDbToEntityMapper<T>(dataReader, propertyMatchList);
+                    initStatus = true;
                 }
-                while (dataReader.Read())
-                {
-                    dataList.Add(DataReaderToEntity<T>(dataReader, propertySetDict, columnNameList, columnNameDict));
-                }
+                dataList.Add(DataReaderToEntity<T>(dataReader, propertySetDict, columnNameList, columnNameDict));
             }
+            while (dataReader.Read())
+            {
+                dataList.Add(DataReaderToEntity<T>(dataReader, propertySetDict, columnNameList, columnNameDict));
+            }
+
             return dataList;
         }
         private static T DataReaderToEntity<T>(DbDataReader reader, dynamic propertySetDict, List<string> columnNameList, Dictionary<PropertyInfo, string> columnNameDict) where T : class, new()
@@ -2099,53 +2335,105 @@ namespace Helper.Core.Library
     }
     public class DataBaseParameterItem
     {
+        private string _fieldSql;
+        private string _field;
+        private string _tableName;
+        private string _primaryKey;
+        private int _pageIndex;
+        private int _pageSize;
+        private string _whereSql;
+        private string _orderSql;
+        private string _joinSql;
+
         public DataBaseParameterItem() { }
         public DataBaseParameterItem(string tableName, string primaryKey, int pageIndex, int pageSize, string whereSql = "", string orderSql = "", string joinSql = "")
         {
-            this.TableName = tableName;
-            this.PrimaryKey = primaryKey;
-            this.PageIndex = pageIndex;
-            this.PageSize = pageSize;
-            this.WhereSql = whereSql;
-            this.OrderSql = orderSql;
-            this.JoinSql = joinSql;
+            this._tableName = tableName;
+            this._primaryKey = primaryKey;
+            this._pageIndex = pageIndex;
+            this._pageSize = pageSize;
+            this._whereSql = whereSql;
+            this._orderSql = orderSql;
+            this._joinSql = joinSql;
         }
         /// <summary>
         /// 查询语句，表连接查询时，主表用 T 代替
         /// </summary>
-        public string FieldSql { get; set; }
+        public string FieldSql
+        {
+            get { return this._fieldSql; }
+            set { this._fieldSql = value; }
+        }
         /// <summary>
         /// 查询语句，值为空时，与 FieldSql 字段相同
         /// </summary>
-        public string Field { get; set; }
+        public string Field
+        {
+            get { return this._field; }
+            set { this._field = value; }
+        }
         /// <summary>
         /// 表名称
         /// </summary>
-        public string TableName { get; set; }
+        public string TableName
+        {
+            get { return this._tableName; }
+            set { this._tableName = value; }
+        }
         /// <summary>
         /// 主键名称
         /// </summary>
-        public string PrimaryKey { get; set; }
+        public string PrimaryKey
+        {
+            get { return this._primaryKey; }
+            set { this._primaryKey = value; }
+        }
         /// <summary>
         /// 页索引，从 1 开始
         /// </summary>
-        public int PageIndex { get; set; }
+        public int PageIndex
+        {
+            get { return this._pageIndex; }
+            set { this._pageIndex = value; }
+        }
         /// <summary>
         /// 页大小
         /// </summary>
-        public int PageSize { get; set; }
+        public int PageSize
+        {
+            get { return this._pageSize; }
+            set { this._pageSize = value; }
+        }
         /// <summary>
         /// Where 语句
         /// </summary>
-        public string WhereSql { get; set; }
+        public string WhereSql
+        {
+            get { return this._whereSql; }
+            set { this._whereSql = value; }
+        }
         /// <summary>
         /// Order 语句
         /// </summary>
-        public string OrderSql { get; set; }
+        public string OrderSql
+        {
+            get { return this._orderSql; }
+            set { this._orderSql = value; }
+        }
         /// <summary>
         /// 表连接语句 例： inner join B on A.XX=B.XX
         /// </summary>
-        public string JoinSql { get; set; }
+        public string JoinSql
+        {
+            get { return this._joinSql; }
+            set { this._joinSql = value; }
+        }
+    }
+    public class DataBasePaginationDataItem<T> where T : class, new()
+    {
+        public List<T> DataList { get; set; }
+        public int PageCount { get; set; }
+        public int TotalCount { get; set; }
     }
 
     #region SqlServer 分页查询语句
