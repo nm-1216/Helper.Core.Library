@@ -20,6 +20,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -67,6 +68,10 @@
     <Reference Include="MySql.Data, Version=6.9.9.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>bin\Debug\MySql.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Debug\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="NPOI, Version=2.2.1.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -161,6 +166,7 @@
     <Compile Include="EncryptHelper.cs" />
     <Compile Include="ExcelExpressionHelper.cs" />
     <Compile Include="ExcelExtendHelper.cs" />
+    <Compile Include="JsonHelper.cs" />
     <Compile Include="OfficeHelper.cs" />
     <Compile Include="TExcelHelper.cs" />
     <Compile Include="ExcelHelper.cs" />
@@ -219,6 +225,7 @@
     <Compile Include="UploadHelper.cs" />
     <Compile Include="UploadVerifyHelper.cs" />
     <Compile Include="UriHelper.cs" />
+    <Compile Include="ValidationCodeHelper.cs" />
     <Compile Include="WordTemplateHelper.cs" />
     <Compile Include="XmlHelper.cs" />
     <Compile Include="XmlSerializerHelper.cs" />
@@ -241,6 +248,9 @@
       <Isolated>False</Isolated>
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </COMReference>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
