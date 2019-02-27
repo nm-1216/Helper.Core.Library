@@ -7,13 +7,15 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
+using System.Text;
+using System.Web;
 
 namespace Helper.Core.Library
 {
     public class ValidationCodeHelper
     {
         #region 私有属性常量
-        private static readonly string[] BACKGROUND_TEXT_LIST = new string[] { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" };
+        private const string CHAR_LIST = "23456789ABCDEFGHKMNPQRSTUVWYZ";
 
         private Point[] _pointList;
         private Random _random;
@@ -28,7 +30,7 @@ namespace Helper.Core.Library
         private int _rotationAngle = 40;
         private double _gaussianDeviation = 0;
         private int _brightnessValue = 0;
-        private bool _isBorder;
+        private bool _isBorder = true;
         private Color _borderColor = Color.FromArgb(90, 87, 46); // 边框颜色
         private Color _backgroundColor = Color.FromArgb(243, 255, 255); //图片背景颜色
         #endregion
@@ -133,6 +135,9 @@ namespace Helper.Core.Library
         {
             this._imageWidth = imageWidth;
             this._imageHeight = imageHeight;
+
+            this._random = new Random(Guid.NewGuid().GetHashCode());
+
         }
 
         #region 对外公开方法
@@ -143,7 +148,6 @@ namespace Helper.Core.Library
         /// <returns></returns>
         public byte[] ToImage(string validationCode)
         {
-            this._random = new Random(Guid.NewGuid().GetHashCode());
             this._pointList = new Point[validationCode.Length + 1];
 
             Bitmap bitmap = new Bitmap(this._imageWidth, this._imageHeight);
@@ -180,9 +184,126 @@ namespace Helper.Core.Library
                 }
             }
         }
+        /// <summary>
+        /// 生成图片，同时保存到 Cookie 或者 Session 中
+        /// </summary>
+        /// <param name="length">验证码长度</param>
+        /// <param name="tokenName">保存 Cookie 或者 Session 名称</param>
+        /// <param name="isCookie">是否 Cookie 保存，默认值：true</param>
+        /// <param name="httpResponse">HttpResponseBase</param>
+        /// <param name="session">HttpSessionStateBase</param>
+        /// <returns></returns>
+        public byte[] ToImage(int length, string tokenName, bool isCookie = true, HttpResponseBase httpResponse = null, HttpSessionStateBase session = null)
+        {
+            string validationCode = this.GetRandomCode(length);
+            if (isCookie)
+            {
+                CookieHelper.SetCookie(tokenName, validationCode, httpResponse);
+            }
+            else
+            {
+                if (session != null)
+                {
+                    session[tokenName] = validationCode;
+                }
+                else
+                {
+                    HttpContext.Current.Session[tokenName] = validationCode;
+                }
+            }
+            return ToImage(validationCode);
+        }
+        /// <summary>
+        /// 生成图片，保存到 Cookie 中
+        /// </summary>
+        /// <param name="length">验证码长度</param>
+        /// <param name="tokenName">保存 Cookie 名称</param>
+        /// <param name="httpResponse">HttpResponseBase</param>
+        /// <returns></returns>
+        public byte[] ToImage(int length, string tokenName, HttpResponseBase httpResponse)
+        {
+            return ToImage(length, tokenName, true, httpResponse, null);
+        }
+        /// <summary>
+        /// 生成图片，保存到 Session 中
+        /// </summary>
+        /// <param name="length">验证码长度</param>
+        /// <param name="tokenName">保存 Session 名称</param>
+        /// <param name="session">HttpSessionStateBase</param>
+        /// <returns></returns>
+        public byte[] ToImage(int length, string tokenName, HttpSessionStateBase session)
+        {
+            return ToImage(length, tokenName, false, null, session);
+        }
+        /// <summary>
+        /// 验证码验证
+        /// </summary>
+        /// <param name="validationCode">验证码</param>
+        /// <param name="tokenName">保存 Cookie 或者 Session 名称</param>
+        /// <param name="isCookie">是否 Cookie 保存，默认值：true</param>
+        /// <param name="httpRequest">HttpRequestBase</param>
+        /// <param name="session">HttpSessionStateBase</param>
+        /// <returns></returns>
+        public static bool Valid(string validationCode, string tokenName, bool isCookie = true, HttpRequestBase httpRequest = null, HttpSessionStateBase session = null)
+        {
+            if (isCookie)
+            {
+                return CookieHelper.GetCookie(tokenName, httpRequest).ToLower() == validationCode.ToLower();
+            }
+            else
+            {
+                if (session != null)
+                {
+                    if (session[tokenName] != null)
+                    {
+                        return session[tokenName].ToString().ToLower() == validationCode.ToLower();
+                    }
+                }
+                else
+                {
+                    if (HttpContext.Current.Session[tokenName] != null)
+                    {
+                        return HttpContext.Current.Session[tokenName].ToString().ToLower() == validationCode.ToLower();
+                    }
+                }
+            }
+            return false;
+        }
+        /// <summary>
+        /// 验证码验证
+        /// </summary>
+        /// <param name="validationCode">验证码</param>
+        /// <param name="tokenName">保存 Cookie 名称</param>
+        /// <param name="httpRequest">HttpRequestBase</param>
+        /// <returns></returns>
+        public static bool Valid(string validationCode, string tokenName, HttpRequestBase httpRequest)
+        {
+            return Valid(validationCode, tokenName, true, httpRequest, null);
+        }
+        /// <summary>
+        /// 验证码验证
+        /// </summary>
+        /// <param name="validationCode">验证码</param>
+        /// <param name="tokenName">保存 Session 名称</param>
+        /// <param name="session">HttpSessionStateBase</param>
+        /// <returns></returns>
+        public static bool Valid(string validationCode, string tokenName, HttpSessionStateBase session)
+        {
+            return Valid(validationCode, tokenName, false, null, session);
+        }
         #endregion
 
         #region 逻辑处理私有方法
+        private string GetRandomCode(int length)
+        {
+            int seedLength = CHAR_LIST.Length;
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int index = 0; index < length; index++)
+            {
+                stringBuilder.Append(CHAR_LIST[this._random.Next(0, seedLength)]);
+            }
+            return stringBuilder.ToString();
+        }
         /// <summary>
         /// 画背景
         /// </summary>

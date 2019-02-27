@@ -14,6 +14,7 @@ namespace Helper.Core.Library
 {
     public class JsonHelper
     {
+        #region 对外公开方法
         /// <summary>
         /// 实体数据/列表转 Json
         /// </summary>
@@ -45,5 +46,6 @@ namespace Helper.Core.Library
         {
             return JsonConvert.DeserializeObject<List<T>>(json);
         }
+        #endregion
     }
 }
